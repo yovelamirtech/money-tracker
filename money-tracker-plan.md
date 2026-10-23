@@ -140,8 +140,8 @@ These are the heart of the testing lesson. Cover them well: empty list, only inc
 | 0.2 | Add Tailwind, set Hebrew + RTL | a Tailwind class visibly works; `dir="rtl"` on `<html>` | ✅ | Tailwind 4 via `@tailwindcss/vite`; `src/index.css` is just `@import "tailwindcss"`. |
 | 0.3 | Set up Vitest + jsdom + RTL + jest-dom | one sample component test passes with `npm test` | ✅ | Vitest 5, config in `vite.config.ts`; `src/test/setup.ts` loads jest-dom and runs `cleanup()` + `localStorage.clear()` after each test. Tests import from `vitest` explicitly (no globals). |
 | 0.4 | ESLint and npm scripts `lint`, `test`, `build` | all three scripts run and pass | ✅ | create-vite now ships oxlint; replaced it with ESLint 10 flat config (`eslint.config.js`: js + typescript-eslint + react-hooks + react-refresh). Also `test:watch`. |
-| 0.5 | GitHub Actions CI (`.github/workflows/ci.yml`) | on push and PR: install → lint → test → build; a failing test makes the run red | 🟡 | Workflow written (`check` job, Node 22, actions v7). **Left:** the folder is not a git repo yet; push to GitHub and see it run green/red. |
-| 0.6 | Deploy to GitHub Pages | push to `main` deploys automatically; Vite `base` set to the repo name; live URL in README | 🟡 | `deploy` job in `ci.yml`, runs only after `check` passes on a push to `main`. `base` comes from `BASE_PATH`, which CI sets to `/<repo-name>/` (local dev stays `/`). **Left:** create the repo, set Settings → Pages → Source: GitHub Actions, put the live URL in README. |
+| 0.5 | GitHub Actions CI (`.github/workflows/ci.yml`) | on push and PR: install → lint → test → build; a failing test makes the run red | ✅ | `check` job: Node 22, `npm ci` → lint → test → build, actions v7. First run on GitHub was green. A failing test fails `npm test`, which turns the run red; that path hasn't been tried on GitHub yet and will be shown in the class demo. |
+| 0.6 | Deploy to GitHub Pages | push to `main` deploys automatically; Vite `base` set to the repo name; live URL in README | ✅ | `deploy` job in `ci.yml`, runs only after `check` passes on a push to `main`. `base` comes from `BASE_PATH`, which CI sets to `/<repo-name>/` (local dev stays `/`). Pages source = GitHub Actions. Live: https://yovelamirtech.github.io/money-tracker/ |
 
 ### Phase 1 — MVP (class)
 
@@ -155,7 +155,7 @@ These are the heart of the testing lesson. Cover them well: empty list, only inc
 | 1.6 | Month screen | summary cards (income, expenses, balance); transaction list newest first; previous/next month navigation | ✅ | `MonthScreen` + `MonthNavigator`, `SummaryCards`, `TransactionList`. Screen switching is a simple `useState` in `App` (no router). |
 | 1.7 | Delete transaction | with confirmation; summary updates | ✅ | Uses `window.confirm`. |
 | 1.8 | Component test for the main flow | add expense → appears in list → totals update → delete → totals update | ✅ | `src/App.test.tsx`, plus cancel-delete and month navigation tests. |
-| 1.9 | README | what it is, screenshot, live link, how to run and test, CI status badge | 🟡 | Written. **Left:** replace `OWNER/REPO` in the badge and live link, add a screenshot. |
+| 1.9 | README | what it is, screenshot, live link, how to run and test, CI status badge | ✅ | Badge, live link, screenshot (`docs/screenshot.jpg`), run/test instructions. |
 
 **🛑 Stop here until the owner says to continue.**
 
@@ -208,3 +208,4 @@ Add one line at the end of every session.
 | Date | Agent / session | What was done | Next step |
 |------|-----------------|---------------|-----------|
 | 2026-10-23 | Claude Code (Opus 5.5) | Phase 0 + 1 built. lint, 77 tests and build pass; checked in browser at mobile size. | Owner reviews names; create GitHub repo and push (finishes 0.5, 0.6, 1.9). |
+| 2026-10-23 | Claude Code (Opus 5.5) | Created public repo yovelamirtech/money-tracker, enabled Pages (Actions), pushed. CI green, site live. README finished. | Owner reviews names. Then the class demo (red PR on `parseAmount`). Phase 2 waits for the owner. |

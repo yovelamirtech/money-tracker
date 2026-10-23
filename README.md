@@ -8,7 +8,7 @@ Everything is stored locally in the browser. No backend, no login.
 
 **Live:** https://yovelamirtech.github.io/money-tracker/
 
-<!-- TODO: add a screenshot: ![screenshot](docs/screenshot.png) -->
+<img src="docs/screenshot.jpg" alt="Month screen" width="320">
 
 ## Run locally
 
