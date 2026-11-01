@@ -1,22 +1,27 @@
+import { useI18n } from '../i18n/i18n'
 import { formatILS } from '../lib/money'
-import type { MonthSummary } from '../lib/summary'
+import { savingsRate, type MonthSummary } from '../lib/summary'
 
 interface SummaryCardsProps {
   summary: MonthSummary
 }
 
 export default function SummaryCards({ summary }: SummaryCardsProps) {
-  const balanceColor = summary.balance < 0 ? 'text-rose-600' : 'text-slate-900'
+  const { t } = useI18n()
+  const balanceColor = summary.balance < 0 ? 'text-expense' : 'text-fg'
+  const rate = savingsRate(summary)
 
   return (
-    <section aria-label="סיכום חודשי" className="grid grid-cols-2 gap-3">
-      <SummaryCard label="הכנסות" agorot={summary.income} valueClass="text-emerald-600" />
-      <SummaryCard label="הוצאות" agorot={summary.expense} valueClass="text-rose-600" />
+    <section aria-label={t('summaryLabel')} className="grid grid-cols-2 gap-3">
+      <SummaryCard label={t('income')} value={formatILS(summary.income)} valueClass="text-income" />
+      <SummaryCard label={t('expenses')} value={formatILS(summary.expense)} valueClass="text-expense" />
+      <SummaryCard label={t('balance')} value={formatILS(summary.balance)} valueClass={balanceColor} big />
       <SummaryCard
-        label="יתרה"
-        agorot={summary.balance}
-        valueClass={`text-2xl ${balanceColor}`}
-        wide
+        label={t('savingsRate')}
+        value={rate === null ? '—' : `${rate}%`}
+        hint={rate === null ? t('noIncome') : t('savingsRateHint')}
+        valueClass={rate !== null && rate < 0 ? 'text-expense' : 'text-fg'}
+        big
       />
     </section>
   )
@@ -24,22 +29,20 @@ export default function SummaryCards({ summary }: SummaryCardsProps) {
 
 interface SummaryCardProps {
   label: string
-  agorot: number
+  value: string
   valueClass: string
-  wide?: boolean
+  hint?: string
+  big?: boolean
 }
 
-function SummaryCard({ label, agorot, valueClass, wide = false }: SummaryCardProps) {
+function SummaryCard({ label, value, valueClass, hint, big = false }: SummaryCardProps) {
   return (
-    <div
-      role="group"
-      aria-label={label}
-      className={`rounded-2xl bg-white p-4 shadow-sm ${wide ? 'col-span-2' : ''}`}
-    >
-      <div className="text-sm text-slate-500">{label}</div>
-      <div dir="ltr" className={`text-end text-xl font-bold ${valueClass}`}>
-        {formatILS(agorot)}
+    <div role="group" aria-label={label} className="rounded-2xl bg-card p-4 shadow-sm">
+      <div className="text-sm text-muted">{label}</div>
+      <div dir="ltr" className={`text-end font-bold ${big ? 'text-2xl' : 'text-xl'} ${valueClass}`}>
+        {value}
       </div>
+      {hint && <div className="text-xs text-muted">{hint}</div>}
     </div>
   )
 }

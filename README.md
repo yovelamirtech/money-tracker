@@ -2,13 +2,24 @@
 
 [![CI](https://github.com/yovelamirtech/money-tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/yovelamirtech/money-tracker/actions/workflows/ci.yml)
 
-A simple, mobile-first web app (Hebrew, RTL) for tracking income and expenses.
-Add what came in and what went out, and see each month's income, expenses and balance.
-Everything is stored locally in the browser. No backend, no login.
+A mobile-first web app (Hebrew RTL, with an English option) for tracking income and expenses.
+Add what came in and what went out, and see each month's income, expenses, balance, and where the money goes.
+Everything is stored locally in the browser. No backend, no login. It can be installed on a phone and works offline.
 
 **Live:** https://yovelamirtech.github.io/money-tracker/
 
-<img src="docs/screenshot.jpg" alt="Month screen" width="320">
+<img src="docs/screenshot.jpg" alt="Month screen" width="300"> <img src="docs/screenshot-insights.jpg" alt="Insights screen" width="300">
+
+## Features
+
+- **Month:** income, expenses, balance and savings rate; quick add; full add/edit form; delete with confirmation; budget warnings
+- **Recurring transactions:** rent, salary and subscriptions are added automatically every month, never twice
+- **Insights:** spending by category, budgets with progress bars, changes from last month, a 6/12‑month income vs expenses trend
+- **Search:** by note, type, category and amount range, across all months
+- **Settings:** manage categories (name, emoji, color), recurring items, budgets; light/dark/system theme; Hebrew/English
+- **Data:** JSON backup export and import (validated), CSV export for a date range (opens in Excel)
+
+**Install on iPhone:** open the live link in Safari → Share → *Add to Home Screen*.
 
 ## Run locally
 
@@ -22,22 +33,31 @@ npm run dev
 ## Test, lint, build
 
 ```bash
-npm test          # unit + component tests (Vitest)
-npm run test:watch
-npm run lint      # ESLint
-npm run build     # type-check + production build
+npm test               # unit + component tests (Vitest)
+npm run test:coverage  # same, with coverage; fails below 80% on src/lib
+npm run test:e2e       # end-to-end tests (Playwright) on the production build
+npm run lint           # ESLint
+npm run build          # type-check + production build
 ```
+
+The first time on a new machine, `npx playwright install chromium` downloads the browser for E2E tests.
 
 ## How it works
 
 - Money is stored as **integer agorot** (₪12.50 → `1250`), never floats.
 - Business logic is in pure functions in `src/lib/` with tests next to each file.
 - `src/lib/storage.ts` is the only code that touches `localStorage` (key `money-tracker:v1`).
+- UI text lives in `src/i18n/messages.ts` (Hebrew and English).
+- Colors are semantic tokens in `src/index.css`, redefined for dark mode.
 
 ## CI/CD
 
-`.github/workflows/ci.yml` runs on every push and pull request: install → lint → test → build.
-A push to `main` that passes all checks deploys to GitHub Pages automatically.
+`.github/workflows/ci.yml` runs on every push and pull request:
+
+1. **check:** install → lint → tests with coverage → build
+2. **e2e:** Playwright tests (main flow, keyboard use, offline/PWA, WCAG AA accessibility scan in light and dark)
+
+A push to `main` that passes both jobs deploys to GitHub Pages automatically.
 
 One-time GitHub setup: **Settings → Pages → Source: GitHub Actions**.
 

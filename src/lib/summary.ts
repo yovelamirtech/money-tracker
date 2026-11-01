@@ -43,3 +43,47 @@ export function sortNewestFirst(transactions: Transaction[]): Transaction[] {
     (a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt),
   )
 }
+
+/**
+ * Share of income that was saved, as a whole percent rounded toward zero: 10,000 in and 7,500 out → 25.
+ * Negative when spending was more than income. null when there was no income.
+ */
+export function savingsRate(summary: MonthSummary): number | null {
+  if (summary.income <= 0) return null
+  return Math.trunc((summary.balance * 100) / summary.income)
+}
+
+export interface MonthTotals extends MonthSummary {
+  month: MonthKey
+}
+
+/** Income, expenses and balance for each month in `months`, in the same order. */
+export function monthlyTotals(transactions: Transaction[], months: MonthKey[]): MonthTotals[] {
+  return months.map((month) => ({ month, ...summarize(filterByMonth(transactions, month)) }))
+}
+
+export interface CategoryChange {
+  categoryId: string
+  current: number // agorot this month
+  previous: number // agorot last month
+  change: number // current - previous
+}
+
+/** Expense change per category between two months; biggest change (up or down) first, unchanged left out. */
+export function compareExpensesByCategory(current: Transaction[], previous: Transaction[]): CategoryChange[] {
+  const expenses = (list: Transaction[]) => new Map(
+    groupByCategory(list.filter((t) => t.type === 'expense')).map((c) => [c.categoryId, c.total]),
+  )
+  const now = expenses(current)
+  const before = expenses(previous)
+  const ids = new Set([...now.keys(), ...before.keys()])
+
+  return [...ids]
+    .map((categoryId) => {
+      const c = now.get(categoryId) ?? 0
+      const p = before.get(categoryId) ?? 0
+      return { categoryId, current: c, previous: p, change: c - p }
+    })
+    .filter((c) => c.change !== 0)
+    .sort((a, b) => Math.abs(b.change) - Math.abs(a.change))
+}
