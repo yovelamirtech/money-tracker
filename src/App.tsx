@@ -45,6 +45,30 @@ function rememberCategory(data: AppData, type: TransactionType, categoryId: stri
   }
 }
 
+/**
+ * Keeps the entry bar on top of the on-screen keyboard: the keyboard covers part of the page without
+ * resizing it (iOS, and Android Chrome by default), so the covered height is exposed as --kb, and
+ * `kb-open` is set on <html> while it's open (the tab bar hides then).
+ */
+function useKeyboardInset() {
+  useEffect(() => {
+    const viewport = window.visualViewport
+    if (!viewport) return
+    const update = () => {
+      const covered = Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop)
+      document.documentElement.style.setProperty('--kb', `${covered}px`)
+      document.documentElement.classList.toggle('kb-open', covered > 80)
+    }
+    viewport.addEventListener('resize', update)
+    viewport.addEventListener('scroll', update)
+    update()
+    return () => {
+      viewport.removeEventListener('resize', update)
+      viewport.removeEventListener('scroll', update)
+    }
+  }, [])
+}
+
 export default function App() {
   const [data, setData] = useState<AppData>(() => withRecurring(loadData()))
   const [view, setView] = useState<View>({ name: 'entry' })
@@ -53,6 +77,7 @@ export default function App() {
 
   useEffect(() => saveData(data), [data])
   useTheme(data.settings.theme)
+  useKeyboardInset()
 
   useEffect(() => {
     const html = document.documentElement
@@ -71,13 +96,17 @@ export default function App() {
   }, [])
 
   // Move focus to the new screen's heading, so keyboard and screen reader users start at the top.
-  const isFirstView = useRef(true)
+  // Opening the entry tab goes straight into the entry field instead, ready to type; coming back to it
+  // from an edit or from sorting doesn't, so the keyboard doesn't cover the list that was just fixed.
+  const previousView = useRef<View | null>(null)
   useEffect(() => {
-    if (isFirstView.current) {
-      isFirstView.current = false
-      return
-    }
-    document.querySelector<HTMLElement>('main h1')?.focus()
+    const previous = previousView.current
+    previousView.current = view
+    if (!previous) return
+    const cameBack = previous.name === 'form' || previous.name === 'sort'
+    const field = view.name === 'entry' && !cameBack ? document.querySelector<HTMLElement>('main [data-autofocus]') : null
+    // On the entry screen the list is scrolled to the newest entries at the bottom; keep it there.
+    ;(field ?? document.querySelector<HTMLElement>('main h1'))?.focus({ preventScroll: view.name === 'entry' })
   }, [view])
 
   const tab: Tab = view.name === 'form' || 'back' in view ? view.back : view.name
@@ -157,6 +186,7 @@ export default function App() {
           <EntryScreen
             transactions={data.transactions}
             categories={data.categories}
+            noteRules={data.noteRules}
             onAdd={handleEntry}
             onEdit={edit}
             onDelete={handleDelete}
