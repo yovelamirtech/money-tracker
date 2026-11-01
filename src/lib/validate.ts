@@ -4,6 +4,7 @@ import type {
   Budget,
   Category,
   Language,
+  NoteRule,
   RecurringRule,
   Settings,
   ThemeSetting,
@@ -92,6 +93,10 @@ export function isRecurringRule(value: unknown): value is RecurringRule {
 
 export function isBudget(value: unknown): value is Budget {
   return isRecord(value) && isNonEmptyString(value.categoryId) && isPositiveAgorot(value.limitAgorot)
+}
+
+export function isNoteRule(value: unknown): value is NoteRule {
+  return isRecord(value) && isNonEmptyString(value.note) && isNonEmptyString(value.categoryId)
 }
 
 function isThemeSetting(value: unknown): value is ThemeSetting {

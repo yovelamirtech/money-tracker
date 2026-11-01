@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { makeTransaction } from '../test/factories'
 import { emptyFilter, filterByDateRange, filterTransactions, isFilterEmpty } from './filter'
 
-const coffee = makeTransaction({ id: 'coffee', amountAgorot: 1500, categoryId: 'food', note: 'קפה בבוקר' })
-const rent = makeTransaction({ id: 'rent', amountAgorot: 450000, categoryId: 'housing', note: 'Rent October' })
+const coffee = makeTransaction({ id: 'coffee', amountAgorot: 1500, categoryId: 'groceries', note: 'קפה בבוקר' })
+const rent = makeTransaction({ id: 'rent', amountAgorot: 450000, categoryId: 'car', note: 'Rent October' })
 const salary = makeTransaction({ id: 'salary', type: 'income', amountAgorot: 1200000, categoryId: 'salary' })
 const all = [coffee, rent, salary]
 
@@ -24,7 +24,7 @@ describe('filterTransactions', () => {
   it('filters by type and by category', () => {
     expect(ids(filterTransactions(all, { ...emptyFilter, type: 'income' }))).toEqual(['salary'])
     expect(ids(filterTransactions(all, { ...emptyFilter, type: 'expense' }))).toEqual(['coffee', 'rent'])
-    expect(ids(filterTransactions(all, { ...emptyFilter, categoryId: 'housing' }))).toEqual(['rent'])
+    expect(ids(filterTransactions(all, { ...emptyFilter, categoryId: 'car' }))).toEqual(['rent'])
   })
 
   it('filters by an inclusive amount range', () => {
@@ -37,7 +37,7 @@ describe('filterTransactions', () => {
   })
 
   it('combines all conditions', () => {
-    const filter = { text: 'rent', type: 'expense' as const, categoryId: 'housing', minAgorot: 100, maxAgorot: null }
+    const filter = { text: 'rent', type: 'expense' as const, categoryId: 'car', minAgorot: 100, maxAgorot: null }
     expect(ids(filterTransactions(all, filter))).toEqual(['rent'])
     expect(isFilterEmpty(filter)).toBe(false)
   })

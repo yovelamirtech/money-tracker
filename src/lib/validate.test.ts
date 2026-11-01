@@ -77,9 +77,9 @@ describe('isRecurringRule', () => {
 
 describe('isBudget', () => {
   it('needs a positive integer limit', () => {
-    expect(isBudget({ categoryId: 'food', limitAgorot: 100000 })).toBe(true)
-    expect(isBudget({ categoryId: 'food', limitAgorot: 0 })).toBe(false)
-    expect(isBudget({ categoryId: 'food', limitAgorot: 10.5 })).toBe(false)
+    expect(isBudget({ categoryId: 'groceries', limitAgorot: 100000 })).toBe(true)
+    expect(isBudget({ categoryId: 'groceries', limitAgorot: 0 })).toBe(false)
+    expect(isBudget({ categoryId: 'groceries', limitAgorot: 10.5 })).toBe(false)
   })
 })
 
@@ -94,7 +94,7 @@ describe('parseSettings', () => {
   })
 
   it('keeps valid values', () => {
-    const settings = { theme: 'dark', language: 'en', lastCategoryId: { expense: 'food', income: 'salary' } }
+    const settings = { theme: 'dark', language: 'en', lastCategoryId: { expense: 'groceries', income: 'salary' } }
     expect(parseSettings(settings)).toEqual(settings)
   })
 })

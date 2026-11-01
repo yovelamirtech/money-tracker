@@ -13,6 +13,8 @@ interface TransactionListProps {
   label?: string
   emptyText?: string
   showYear?: boolean
+  /** Show the note as the title and the category below it (for the entry screen, where the note is what was typed). */
+  noteFirst?: boolean
 }
 
 export default function TransactionList({
@@ -23,6 +25,7 @@ export default function TransactionList({
   label,
   emptyText,
   showYear = false,
+  noteFirst = false,
 }: TransactionListProps) {
   const { t, categoryName } = useI18n()
 
@@ -45,6 +48,8 @@ export default function TransactionList({
         const isIncome = tx.type === 'income'
         const amount = `${isIncome ? '+' : '-'}${formatILS(tx.amountAgorot)}`
         const date = showYear ? formatFullDate(tx.date) : formatShortDate(tx.date)
+        const title = noteFirst && tx.note ? tx.note : name
+        const detail = noteFirst && tx.note ? name : tx.note
 
         return (
           <li key={tx.id} className="flex items-center gap-1 p-2">
@@ -58,7 +63,7 @@ export default function TransactionList({
               <CategoryIcon category={category} />
               <span className="min-w-0 flex-1">
                 <span className="flex items-center gap-1 font-medium">
-                  <span>{name}</span>
+                  <span className="truncate">{title}</span>
                   {tx.recurringId && (
                     <span role="img" aria-label={t('recurringBadge')} title={t('recurringBadge')} className="text-sm">
                       🔁
@@ -67,7 +72,7 @@ export default function TransactionList({
                 </span>
                 <span className="block truncate text-sm text-muted">
                   {date}
-                  {tx.note && ` · ${tx.note}`}
+                  {detail && ` · ${detail}`}
                 </span>
               </span>
               <span dir="ltr" className={`font-semibold ${isIncome ? 'text-income' : 'text-expense'}`}>
@@ -76,8 +81,8 @@ export default function TransactionList({
             </button>
             <button
               type="button"
-              aria-label={t('deleteTransaction', { name })}
-              onClick={() => confirmDelete(tx, name)}
+              aria-label={t('deleteTransaction', { name: title })}
+              onClick={() => confirmDelete(tx, title)}
               className={`${iconButton} hover:bg-danger-soft hover:text-expense`}
             >
               ✕

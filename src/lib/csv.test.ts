@@ -6,12 +6,12 @@ const labels: CsvLabels = {
   headers: ['Date', 'Type', 'Category', 'Amount', 'Note'],
   types: { income: 'Income', expense: 'Expense' },
 }
-const names: Record<string, string> = { food: 'Food', salary: 'Salary' }
+const names: Record<string, string> = { groceries: 'Groceries', salary: 'Salary' }
 
 describe('csvCell', () => {
   it('leaves plain values alone', () => {
     expect(csvCell('hello')).toBe('hello')
-    expect(csvCell('אוכל')).toBe('אוכל')
+    expect(csvCell('סופר')).toBe('סופר')
     expect(csvCell('')).toBe('')
   })
 
@@ -34,7 +34,7 @@ describe('transactionsToCsv', () => {
   it('writes a header and one row per transaction, oldest first, with CRLF', () => {
     const csv = transactionsToCsv(
       [
-        makeTransaction({ date: '2026-10-20', amountAgorot: 1250, categoryId: 'food', note: 'פלאפל, חומוס' }),
+        makeTransaction({ date: '2026-10-20', amountAgorot: 1250, categoryId: 'groceries', note: 'פלאפל, חומוס' }),
         makeTransaction({ date: '2026-10-01', type: 'income', amountAgorot: 1200000, categoryId: 'salary' }),
       ],
       (id) => names[id] ?? id,
@@ -43,7 +43,7 @@ describe('transactionsToCsv', () => {
     expect(csv).toBe(
       'Date,Type,Category,Amount,Note\r\n' +
         '2026-10-01,Income,Salary,12000.00,\r\n' +
-        '2026-10-20,Expense,Food,12.50,"פלאפל, חומוס"\r\n',
+        '2026-10-20,Expense,Groceries,12.50,"פלאפל, חומוס"\r\n',
     )
   })
 

@@ -24,12 +24,12 @@ describe('dateForMonth', () => {
 
 describe('createRuleFromTransaction', () => {
   it('copies the transaction and counts its month as already generated', () => {
-    const t = makeTransaction({ amountAgorot: 4990, categoryId: 'subscriptions', date: '2026-10-17', note: 'נטפליקס' })
+    const t = makeTransaction({ amountAgorot: 4990, categoryId: 'health', date: '2026-10-17', note: 'נטפליקס' })
     expect(createRuleFromTransaction(t, 'r1')).toEqual({
       id: 'r1',
       type: 'expense',
       amountAgorot: 4990,
-      categoryId: 'subscriptions',
+      categoryId: 'health',
       dayOfMonth: 17,
       note: 'נטפליקס',
       startMonth: '2026-10',
@@ -50,7 +50,7 @@ describe('generateRecurring', () => {
       id: 'id-1',
       type: 'expense',
       amountAgorot: rule.amountAgorot,
-      categoryId: 'housing',
+      categoryId: 'car',
       date: '2026-09-30',
       note: 'שכירות',
       createdAt: NOW,

@@ -12,9 +12,10 @@ Everything is stored locally in the browser. No backend, no login. It can be ins
 
 ## Features
 
-- **Month:** income, expenses, balance and savings rate; quick add; full add/edit form; delete with confirmation; budget warnings
+- **Entry (home screen):** one line, like `שכ״ד 4000`, and send. The number is the amount and the rest is the note. The latest entries are right below; tap one to fix it, or delete it. A detailed form is there for a date or a monthly repeat.
+- **Categories by learning:** an entry gets the category last chosen for the same note; "משכורת" is income. Anything else waits as "no category" until you sort it: one entry at a time, one tap on a category button, and every other entry with the same note goes with it (with undo).
+- **Month:** income, expenses, balance and savings rate; budget warnings and progress bars; spending by category; changes from last month; a 6/12‑month income vs expenses trend; every transaction of the month
 - **Recurring transactions:** rent, salary and subscriptions are added automatically every month, never twice
-- **Insights:** spending by category, budgets with progress bars, changes from last month, a 6/12‑month income vs expenses trend
 - **Search:** by note, type, category and amount range, across all months
 - **Settings:** manage categories (name, emoji, color), recurring items, budgets; light/dark/system theme; Hebrew/English
 - **Data:** JSON backup export and import (validated), CSV export for a date range (opens in Excel)
@@ -46,7 +47,7 @@ The first time on a new machine, `npx playwright install chromium` downloads the
 
 - Money is stored as **integer agorot** (₪12.50 → `1250`), never floats.
 - Business logic is in pure functions in `src/lib/` with tests next to each file.
-- `src/lib/storage.ts` is the only code that touches `localStorage` (key `money-tracker:v1`).
+- `src/lib/storage.ts` is the only code that touches `localStorage` (key `money-tracker:v2`).
 - UI text lives in `src/i18n/messages.ts` (Hebrew and English).
 - Colors are semantic tokens in `src/index.css`, redefined for dark mode.
 

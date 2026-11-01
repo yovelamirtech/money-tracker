@@ -1,11 +1,11 @@
 import { useI18n } from '../i18n/i18n'
 import type { MessageKey } from '../i18n/messages'
 
-export type Tab = 'month' | 'insights' | 'search' | 'settings'
+export type Tab = 'entry' | 'month' | 'search' | 'settings'
 
 const tabs: { tab: Tab; label: MessageKey; icon: string }[] = [
+  { tab: 'entry', label: 'navEntry', icon: '✏️' },
   { tab: 'month', label: 'navMonth', icon: '📅' },
-  { tab: 'insights', label: 'navInsights', icon: '📊' },
   { tab: 'search', label: 'navSearch', icon: '🔍' },
   { tab: 'settings', label: 'navSettings', icon: '⚙️' },
 ]

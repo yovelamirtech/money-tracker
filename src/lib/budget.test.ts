@@ -18,28 +18,28 @@ describe('budgetLevel', () => {
 
 describe('budgetProgress', () => {
   const transactions = [
-    makeTransaction({ categoryId: 'food', amountAgorot: 60000 }),
-    makeTransaction({ categoryId: 'food', amountAgorot: 30000 }),
+    makeTransaction({ categoryId: 'groceries', amountAgorot: 60000 }),
+    makeTransaction({ categoryId: 'groceries', amountAgorot: 30000 }),
     makeTransaction({ categoryId: 'bills', amountAgorot: 10000 }),
-    makeTransaction({ type: 'income', categoryId: 'food', amountAgorot: 999999 }), // income never counts
+    makeTransaction({ type: 'income', categoryId: 'groceries', amountAgorot: 999999 }), // income never counts
   ]
 
   it('sums expenses per budget and sorts by how much of the limit is used', () => {
     const progress = budgetProgress(transactions, [
       { categoryId: 'bills', limitAgorot: 50000 },
-      { categoryId: 'food', limitAgorot: 100000 },
+      { categoryId: 'groceries', limitAgorot: 100000 },
       { categoryId: 'health', limitAgorot: 20000 },
     ])
 
     expect(progress).toEqual([
-      { categoryId: 'food', limit: 100000, spent: 90000, remaining: 10000, percent: 90, level: 'near' },
+      { categoryId: 'groceries', limit: 100000, spent: 90000, remaining: 10000, percent: 90, level: 'near' },
       { categoryId: 'bills', limit: 50000, spent: 10000, remaining: 40000, percent: 20, level: 'ok' },
       { categoryId: 'health', limit: 20000, spent: 0, remaining: 20000, percent: 0, level: 'ok' },
     ])
   })
 
   it('reports a negative remaining amount and >100% when over', () => {
-    const [food] = budgetProgress(transactions, [{ categoryId: 'food', limitAgorot: 60000 }])
+    const [food] = budgetProgress(transactions, [{ categoryId: 'groceries', limitAgorot: 60000 }])
     expect(food).toMatchObject({ remaining: -30000, percent: 150, level: 'over' })
   })
 
@@ -50,9 +50,9 @@ describe('budgetProgress', () => {
 
 describe('setBudget', () => {
   it('adds, replaces and removes a budget', () => {
-    const added = setBudget([], 'food', 1000)
-    expect(added).toEqual([{ categoryId: 'food', limitAgorot: 1000 }])
-    expect(setBudget(added, 'food', 2000)).toEqual([{ categoryId: 'food', limitAgorot: 2000 }])
-    expect(setBudget(added, 'food', null)).toEqual([])
+    const added = setBudget([], 'groceries', 1000)
+    expect(added).toEqual([{ categoryId: 'groceries', limitAgorot: 1000 }])
+    expect(setBudget(added, 'groceries', 2000)).toEqual([{ categoryId: 'groceries', limitAgorot: 2000 }])
+    expect(setBudget(added, 'groceries', null)).toEqual([])
   })
 })

@@ -105,7 +105,7 @@ describe('CSV export (4.3)', () => {
       ...createDefaultAppData(),
       transactions: [
         makeTransaction({ date: '2026-01-31', amountAgorot: 100 }),
-        makeTransaction({ date: '2026-02-01', amountAgorot: 1250, categoryId: 'food', note: 'פלאפל' }),
+        makeTransaction({ date: '2026-02-01', amountAgorot: 1250, categoryId: 'groceries', note: 'פלאפל' }),
         makeTransaction({ date: '2026-02-28', amountAgorot: 500000, type: 'income', categoryId: 'salary' }),
         makeTransaction({ date: '2026-03-01', amountAgorot: 300 }),
       ],
@@ -128,7 +128,7 @@ describe('CSV export (4.3)', () => {
     expect([...bytes.slice(0, 3)]).toEqual([0xef, 0xbb, 0xbf])
     expect(await downloads[0].blob.text()).toBe(
       'תאריך,סוג,קטגוריה,סכום,הערה\r\n' +
-        '2026-02-01,הוצאה,אוכל,12.50,פלאפל\r\n' +
+        '2026-02-01,הוצאה,סופר,12.50,פלאפל\r\n' +
         '2026-02-28,הכנסה,משכורת,5000.00,\r\n',
     )
   })

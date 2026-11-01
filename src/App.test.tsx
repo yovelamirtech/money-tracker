@@ -3,58 +3,116 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import App from './App'
 import { addMonths, formatMonthLabel, todayISO, toMonthKey } from './lib/month'
-import { loadTransactions, saveTransactions } from './lib/storage'
+import { loadData, loadTransactions, saveTransactions } from './lib/storage'
 
 function summaryValue(label: string) {
   return within(screen.getByRole('group', { name: label }))
 }
 
 describe('App', () => {
-  it('starts on the current month with an empty list', () => {
+  it('starts on the entry screen; the month tab has the summary', async () => {
+    const user = userEvent.setup()
     render(<App />)
 
+    expect(screen.getByRole('heading', { name: 'הזנות אחרונות' })).toBeInTheDocument()
+    expect(screen.getByLabelText('הזנה חדשה')).toHaveFocus()
+    expect(screen.getByText(/עוד לא הזנת כלום/)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^מיון/ })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'חודש' }))
     const currentMonth = toMonthKey(todayISO())
     expect(screen.getByRole('heading', { name: formatMonthLabel(currentMonth) })).toBeInTheDocument()
     expect(screen.getByText('אין תנועות בחודש הזה')).toBeInTheDocument()
     expect(summaryValue('יתרה').getByText('₪0.00')).toBeInTheDocument()
   })
 
-  it('main flow: add expense → in list → totals update → delete → totals update', async () => {
+  it('main flow: type → sent without a category → sort it → the next one is learned → totals', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    const field = screen.getByLabelText('הזנה חדשה')
+
+    // Type and send: no category yet
+    await user.type(field, 'שכ״ד4000{Enter}')
+    expect(field).toHaveValue('')
+    expect(field).toHaveFocus()
+    expect(screen.getByRole('status')).toHaveTextContent('נרשם: שכ״ד ₪4,000.00 · ללא קטגוריה')
+    const recent = screen.getByRole('list', { name: 'הזנות אחרונות' })
+    expect(within(recent).getByText('שכ״ד')).toBeInTheDocument()
+    expect(within(recent).getByText(/ללא קטגוריה/)).toBeInTheDocument()
+    expect(loadTransactions()[0]).toMatchObject({ type: 'expense', amountAgorot: 400000, note: 'שכ״ד', categoryId: 'uncategorized' })
+
+    // "משכורת" is income right away
+    await user.type(field, 'משכורת 10000')
+    await user.click(screen.getByRole('button', { name: 'שליחה' }))
+    expect(screen.getByRole('status')).toHaveTextContent('נרשם: משכורת ₪10,000.00 · משכורת')
+    expect(loadTransactions()[1]).toMatchObject({ type: 'income', categoryId: 'salary' })
+
+    // Sort the uncategorized one with one tap
+    await user.click(screen.getByRole('button', { name: 'מיון 1 ללא קטגוריה' }))
+    expect(screen.getByRole('heading', { name: 'מיון לקטגוריות' })).toBeInTheDocument()
+    expect(screen.getByText('שכ״ד')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'חשבונות' }))
+    expect(screen.getByText('הכול ממוין')).toBeInTheDocument()
+    expect(loadTransactions()[0].categoryId).toBe('bills')
+    await user.click(screen.getByRole('button', { name: 'חזרה להזנה' }))
+    expect(screen.queryByRole('button', { name: /^מיון/ })).not.toBeInTheDocument()
+
+    // Next time the same note gets the category by itself
+    await user.type(screen.getByLabelText('הזנה חדשה'), 'שכ"ד 4000{Enter}')
+    expect(screen.getByRole('status')).toHaveTextContent('· חשבונות')
+    expect(loadTransactions()[2]).toMatchObject({ categoryId: 'bills' })
+
+    // Totals on the month tab
+    await user.click(screen.getByRole('button', { name: 'חודש' }))
+    expect(summaryValue('הוצאות').getByText('₪8,000.00')).toBeInTheDocument()
+    expect(summaryValue('הכנסות').getByText('₪10,000.00')).toBeInTheDocument()
+    expect(summaryValue('יתרה').getByText('₪2,000.00')).toBeInTheDocument()
+  })
+
+  it('fixes the latest entry right away: edit it, or delete it', async () => {
     const user = userEvent.setup()
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
     render(<App />)
 
-    // Add an expense
-    await user.click(screen.getByRole('button', { name: '+ הוספת תנועה' }))
-    await user.type(screen.getByLabelText('סכום (₪)'), '12.50')
-    await user.selectOptions(screen.getByLabelText('קטגוריה'), 'תחבורה')
-    await user.type(screen.getByLabelText('הערה (לא חובה)'), 'רב-קו')
+    await user.type(screen.getByLabelText('הזנה חדשה'), 'קפה 180{Enter}')
+    await user.click(screen.getByRole('button', { name: /^עריכת\s*קפה/ }))
+    expect(screen.getByRole('heading', { name: 'עריכת תנועה' })).toBeInTheDocument()
+    expect(screen.getByLabelText('קטגוריה')).toHaveValue('uncategorized')
+    await user.clear(screen.getByLabelText('סכום (₪)'))
+    await user.type(screen.getByLabelText('סכום (₪)'), '18')
+    await user.selectOptions(screen.getByLabelText('קטגוריה'), 'אוכל בחוץ')
     await user.click(screen.getByRole('button', { name: 'שמירה' }))
 
-    // It appears in the list
-    const list = screen.getByRole('list', { name: 'תנועות' })
-    expect(within(list).getByText('תחבורה')).toBeInTheDocument()
-    expect(within(list).getByText(/רב-קו/)).toBeInTheDocument()
+    // Back on the entry screen, fixed, and the category is learned
+    expect(screen.getByRole('heading', { name: 'הזנות אחרונות' })).toBeInTheDocument()
+    expect(loadData().transactions[0]).toMatchObject({ amountAgorot: 1800, categoryId: 'eating-out' })
+    expect(loadData().noteRules).toEqual([{ note: 'קפה', categoryId: 'eating-out' }])
 
-    // Totals update
-    expect(summaryValue('הוצאות').getByText('₪12.50')).toBeInTheDocument()
-    expect(summaryValue('הכנסות').getByText('₪0.00')).toBeInTheDocument()
-    expect(summaryValue('יתרה').getByText('-₪12.50')).toBeInTheDocument()
-
-    // Saved to storage
-    expect(loadTransactions()).toHaveLength(1)
-
-    // Delete it (after confirming)
-    await user.click(screen.getByRole('button', { name: 'מחיקת תחבורה' }))
-    expect(confirmSpy).toHaveBeenCalledOnce()
-
-    // Totals update again
-    expect(screen.queryByRole('list', { name: 'תנועות' })).not.toBeInTheDocument()
-    expect(summaryValue('הוצאות').getByText('₪0.00')).toBeInTheDocument()
-    expect(summaryValue('יתרה').getByText('₪0.00')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'מחיקת קפה' }))
+    expect(confirmSpy).toHaveBeenCalledWith('למחוק את "קפה" בסך ₪18.00?')
     expect(loadTransactions()).toEqual([])
-
     confirmSpy.mockRestore()
+  })
+
+  it('shows an error for an entry without a valid amount, and saves nothing', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    const field = screen.getByLabelText('הזנה חדשה')
+
+    await user.type(field, 'קפה{Enter}')
+    expect(screen.getByRole('alert')).toHaveTextContent('חסר סכום')
+    expect(field).toHaveValue('קפה')
+    expect(field).toHaveAttribute('aria-invalid', 'true')
+
+    await user.type(field, ' 1.234{Enter}')
+    expect(screen.getByRole('alert')).toHaveTextContent('הסכום לא תקין')
+
+    // Typing again clears the error; an empty field sends nothing
+    await user.clear(field)
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'שליחה' }))
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    expect(loadTransactions()).toEqual([])
   })
 
   it('does not delete when the confirmation is cancelled', async () => {
@@ -71,6 +129,7 @@ describe('App', () => {
       },
     ])
     render(<App />)
+    await user.click(screen.getByRole('button', { name: 'חודש' }))
 
     await user.click(screen.getByRole('button', { name: 'מחיקת משכורת' }))
 
@@ -82,11 +141,12 @@ describe('App', () => {
   it('shows transactions newest first and moves between months', async () => {
     const user = userEvent.setup()
     saveTransactions([
-      { id: '1', type: 'expense', amountAgorot: 1000, categoryId: 'food', date: '2026-03-02', createdAt: '2026-03-02T10:00:00Z' },
+      { id: '1', type: 'expense', amountAgorot: 1000, categoryId: 'groceries', date: '2026-03-02', createdAt: '2026-03-02T10:00:00Z' },
       { id: '2', type: 'expense', amountAgorot: 2000, categoryId: 'bills', date: '2026-03-20', createdAt: '2026-03-20T10:00:00Z' },
       { id: '3', type: 'income', amountAgorot: 900000, categoryId: 'salary', date: '2026-04-01', createdAt: '2026-04-01T10:00:00Z' },
     ])
     render(<App />)
+    await user.click(screen.getByRole('button', { name: 'חודש' }))
 
     // Walk back from the current month to March 2026
     const current = toMonthKey(todayISO())
@@ -99,9 +159,9 @@ describe('App', () => {
     expect(screen.getByRole('heading', { name: formatMonthLabel('2026-03') })).toBeInTheDocument()
 
     const items = within(screen.getByRole('list', { name: 'תנועות' })).getAllByRole('listitem')
-    expect(items.map((li) => within(li).getByText(/^(אוכל|חשבונות)$/).textContent)).toEqual([
+    expect(items.map((li) => within(li).getByText(/^(סופר|חשבונות)$/).textContent)).toEqual([
       'חשבונות',
-      'אוכל',
+      'סופר',
     ])
     expect(summaryValue('הוצאות').getByText('₪30.00')).toBeInTheDocument()
 

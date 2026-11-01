@@ -1,25 +1,32 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import BottomNav, { type Tab } from './components/BottomNav'
 import type { CategoryValues } from './components/CategoryForm'
+import { UNCATEGORIZED_ID } from './data/defaultCategories'
 import { useTheme } from './hooks/useTheme'
 import { createI18n, I18nContext } from './i18n/i18n'
 import { addCategory, deleteCategory, updateCategory } from './lib/categories'
 import { createId } from './lib/id'
 import { todayISO, toMonthKey } from './lib/month'
+import { assignCategory, createEntry, learnRule, restoreTransactions } from './lib/entry'
 import { applyRecurring, createRuleFromTransaction, deleteRule, pauseRule, resumeRule } from './lib/recurring'
 import { loadData, saveData } from './lib/storage'
 import type { AppData, Budget, MonthKey, Settings, Transaction, TransactionType } from './lib/types'
 import BudgetsScreen from './screens/BudgetsScreen'
 import CategoriesScreen from './screens/CategoriesScreen'
-import InsightsScreen from './screens/InsightsScreen'
+import EntryScreen from './screens/EntryScreen'
 import MonthScreen from './screens/MonthScreen'
 import RecurringScreen from './screens/RecurringScreen'
 import SearchScreen from './screens/SearchScreen'
 import SettingsScreen, { type ManageView } from './screens/SettingsScreen'
+import SortScreen, { type AssignResult } from './screens/SortScreen'
 import TransactionFormScreen, { type SaveOptions } from './screens/TransactionFormScreen'
 
 // Simple view state instead of a router. Sub-screens remember which tab to go back to.
-type View = { name: Tab } | { name: 'form'; editId?: string; back: Tab } | { name: ManageView; back: Tab }
+type View =
+  | { name: Tab }
+  | { name: 'form'; editId?: string; back: Tab }
+  | { name: ManageView; back: Tab }
+  | { name: 'sort'; back: Tab }
 
 function currentMonth(): MonthKey {
   return toMonthKey(todayISO())
@@ -31,6 +38,7 @@ function withRecurring(data: AppData): AppData {
 }
 
 function rememberCategory(data: AppData, type: TransactionType, categoryId: string): AppData {
+  if (categoryId === UNCATEGORIZED_ID) return data
   return {
     ...data,
     settings: { ...data.settings, lastCategoryId: { ...data.settings.lastCategoryId, [type]: categoryId } },
@@ -39,7 +47,7 @@ function rememberCategory(data: AppData, type: TransactionType, categoryId: stri
 
 export default function App() {
   const [data, setData] = useState<AppData>(() => withRecurring(loadData()))
-  const [view, setView] = useState<View>({ name: 'month' })
+  const [view, setView] = useState<View>({ name: 'entry' })
   const [selectedMonth, setSelectedMonth] = useState<MonthKey>(currentMonth)
   const i18n = useMemo(() => createI18n(data.settings.language), [data.settings.language])
 
@@ -89,16 +97,29 @@ export default function App() {
     } else {
       next = { ...data, transactions: [...data.transactions, transaction] }
     }
+    // Choosing a category for a note in the form teaches it too, like the sort screen.
+    next = { ...next, noteRules: learnRule(next.noteRules, transaction.note, transaction.categoryId) }
     setData(rememberCategory(next, transaction.type, transaction.categoryId))
 
-    const back = view.name === 'form' ? view.back : 'month'
+    const back = view.name === 'form' ? view.back : 'entry'
     if (back === 'month') setSelectedMonth(toMonthKey(transaction.date))
     setView({ name: back })
   }
 
-  function handleQuickAdd(transaction: Transaction) {
-    setData(rememberCategory({ ...data, transactions: [...data.transactions, transaction] }, transaction.type, transaction.categoryId))
-    setSelectedMonth(toMonthKey(transaction.date))
+  function handleEntry(entry: { amountAgorot: number; note: string }): Transaction {
+    const transaction = createEntry(entry, data, createId(), todayISO(), new Date().toISOString())
+    setData({ ...data, transactions: [...data.transactions, transaction] })
+    return transaction
+  }
+
+  function handleAssign(transactionId: string, categoryId: string): AssignResult {
+    const { data: next, before } = assignCategory(data, transactionId, categoryId)
+    setData(next)
+    return { before, rulesBefore: data.noteRules }
+  }
+
+  function handleUndoAssign({ before, rulesBefore }: AssignResult) {
+    setData(restoreTransactions(data, before, rulesBefore))
   }
 
   function handleDelete(id: string) {
@@ -131,6 +152,28 @@ export default function App() {
 
   function renderView() {
     switch (view.name) {
+      case 'entry':
+        return (
+          <EntryScreen
+            transactions={data.transactions}
+            categories={data.categories}
+            onAdd={handleEntry}
+            onEdit={edit}
+            onDelete={handleDelete}
+            onSort={() => setView({ name: 'sort', back: 'entry' })}
+            onDetailedAdd={() => setView({ name: 'form', back: 'entry' })}
+          />
+        )
+      case 'sort':
+        return (
+          <SortScreen
+            transactions={data.transactions}
+            categories={data.categories}
+            onAssign={handleAssign}
+            onUndo={handleUndoAssign}
+            onBack={() => setView({ name: view.back })}
+          />
+        )
       case 'month':
         return (
           <MonthScreen
@@ -138,13 +181,10 @@ export default function App() {
             transactions={data.transactions}
             categories={data.categories}
             budgets={data.budgets}
-            lastCategoryId={data.settings.lastCategoryId}
             onMonthChange={setSelectedMonth}
-            onAdd={() => setView({ name: 'form', back: 'month' })}
-            onQuickAdd={handleQuickAdd}
             onEdit={edit}
             onDelete={handleDelete}
-            onOpenInsights={() => setView({ name: 'insights' })}
+            onEditBudgets={() => setView({ name: 'budgets', back: 'month' })}
           />
         )
       case 'form': {
@@ -159,17 +199,6 @@ export default function App() {
           />
         )
       }
-      case 'insights':
-        return (
-          <InsightsScreen
-            month={selectedMonth}
-            transactions={data.transactions}
-            categories={data.categories}
-            budgets={data.budgets}
-            onMonthChange={setSelectedMonth}
-            onEditBudgets={() => setView({ name: 'budgets', back: 'insights' })}
-          />
-        )
       case 'search':
         return (
           <SearchScreen transactions={data.transactions} categories={data.categories} onEdit={edit} onDelete={handleDelete} />
