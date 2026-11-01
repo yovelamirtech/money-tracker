@@ -1,5 +1,5 @@
 import { OTHER_CATEGORY_ID } from '../data/defaultCategories'
-import type { AppData, Category, TransactionType } from './types'
+import type { AppData, Category, Settings, TransactionType } from './types'
 
 export function isOtherCategory(id: string): boolean {
   return id === OTHER_CATEGORY_ID.income || id === OTHER_CATEGORY_ID.expense
@@ -70,4 +70,15 @@ export function deleteCategory(data: AppData, id: string): AppData {
 /** Number of transactions in a category (shown before deleting it). */
 export function countTransactionsInCategory(data: AppData, id: string): number {
   return data.transactions.filter((t) => t.categoryId === id).length
+}
+
+/** The last used category of a type if it still exists, otherwise the first category of that type. */
+export function defaultCategoryFor(
+  categories: Category[],
+  type: TransactionType,
+  lastCategoryId: Settings['lastCategoryId'],
+): string {
+  const last = lastCategoryId[type]
+  if (last && categories.some((c) => c.id === last && c.type === type)) return last
+  return categories.find((c) => c.type === type)?.id ?? ''
 }

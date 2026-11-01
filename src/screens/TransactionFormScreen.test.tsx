@@ -3,12 +3,12 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { defaultCategories } from '../data/defaultCategories'
 import { todayISO } from '../lib/month'
-import AddTransactionScreen from './AddTransactionScreen'
+import TransactionFormScreen from './TransactionFormScreen'
 
 function renderForm() {
   const onSave = vi.fn()
   const onCancel = vi.fn()
-  render(<AddTransactionScreen categories={defaultCategories} onSave={onSave} onCancel={onCancel} />)
+  render(<TransactionFormScreen categories={defaultCategories} onSave={onSave} onCancel={onCancel} />)
   return { onSave, onCancel, user: userEvent.setup() }
 }
 
@@ -18,7 +18,7 @@ function categoryOptions() {
     .map((o) => o.textContent)
 }
 
-describe('AddTransactionScreen', () => {
+describe('TransactionFormScreen', () => {
   it('starts as an expense, dated today', () => {
     renderForm()
     expect(screen.getByRole('button', { name: 'הוצאה' })).toHaveAttribute('aria-pressed', 'true')

@@ -4,6 +4,7 @@ import { createDefaultAppData } from './appData'
 import {
   addCategory,
   countTransactionsInCategory,
+  defaultCategoryFor,
   deleteCategory,
   isOtherCategory,
   updateCategory,
@@ -96,5 +97,20 @@ describe('countTransactionsInCategory', () => {
   it('counts transactions of one category', () => {
     expect(countTransactionsInCategory(sampleData(), 'food')).toBe(2)
     expect(countTransactionsInCategory(sampleData(), 'health')).toBe(0)
+  })
+})
+
+describe('defaultCategoryFor', () => {
+  const { categories } = createDefaultAppData()
+
+  it('uses the last used category of the type', () => {
+    expect(defaultCategoryFor(categories, 'expense', { expense: 'bills' })).toBe('bills')
+  })
+
+  it('falls back to the first category when the last one is gone or of the other type', () => {
+    expect(defaultCategoryFor(categories, 'expense', {})).toBe('food')
+    expect(defaultCategoryFor(categories, 'expense', { expense: 'deleted' })).toBe('food')
+    expect(defaultCategoryFor(categories, 'income', { income: 'food' })).toBe('salary')
+    expect(defaultCategoryFor([], 'income', {})).toBe('')
   })
 })

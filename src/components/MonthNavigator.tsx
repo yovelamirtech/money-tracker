@@ -1,34 +1,38 @@
+import { useI18n } from '../i18n/i18n'
 import { addMonths, formatMonthLabel } from '../lib/month'
 import type { MonthKey } from '../lib/types'
+import { iconButton } from './ui'
 
 interface MonthNavigatorProps {
   month: MonthKey
   onMonthChange: (month: MonthKey) => void
 }
 
-const arrowButtonClass =
-  'flex size-12 items-center justify-center rounded-full text-2xl text-slate-600 hover:bg-slate-200 focus-visible:outline-4 focus-visible:outline-indigo-300'
-
-// In RTL the previous month sits on the right (→) and the next month on the left (←).
+// The previous month sits on the start side: right (→) in RTL, left (←) in LTR.
 export default function MonthNavigator({ month, onMonthChange }: MonthNavigatorProps) {
+  const { t, locale, dir } = useI18n()
+  const arrowClass = `${iconButton} size-12 text-2xl`
+
   return (
     <header className="flex items-center justify-between">
       <button
         type="button"
-        aria-label="החודש הקודם"
-        className={arrowButtonClass}
+        aria-label={t('prevMonth')}
+        className={arrowClass}
         onClick={() => onMonthChange(addMonths(month, -1))}
       >
-        →
+        {dir === 'rtl' ? '→' : '←'}
       </button>
-      <h1 className="text-xl font-bold">{formatMonthLabel(month)}</h1>
+      <h1 tabIndex={-1} className="text-xl font-bold outline-none">
+        {formatMonthLabel(month, locale)}
+      </h1>
       <button
         type="button"
-        aria-label="החודש הבא"
-        className={arrowButtonClass}
+        aria-label={t('nextMonth')}
+        className={arrowClass}
         onClick={() => onMonthChange(addMonths(month, 1))}
       >
-        ←
+        {dir === 'rtl' ? '←' : '→'}
       </button>
     </header>
   )

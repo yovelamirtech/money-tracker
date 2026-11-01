@@ -1,1 +1,73 @@
 @import "tailwindcss";
+
+/* Dark mode follows a `.dark` class on <html> (set from the theme setting), not only the media query. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Semantic color tokens. Components use these (bg-card, text-muted, ...) instead of raw colors,
+ * so dark mode only redefines the variables below. Text tokens meet WCAG AA on card and app backgrounds.
+ */
+@theme {
+  --color-app: #f1f5f9;
+  --color-card: #ffffff;
+  --color-subtle: #e2e8f0;
+  --color-fg: #0f172a;
+  --color-muted: #475569;
+  --color-line: #e2e8f0;
+  --color-field: #64748b;
+  --color-income: #047857;
+  --color-expense: #be123c;
+  --color-warn: #a16207;
+  --color-accent: #4f46e5;
+  --color-accent-hover: #4338ca;
+  --color-accent-text: #4338ca;
+  --color-on-accent: #ffffff;
+  --color-accent-soft: #e0e7ff;
+  --color-focus: #6366f1;
+  --color-danger-soft: #ffe4e6;
+  --color-warn-soft: #fef3c7;
+
+  /* Chart marks (validated categorical pair + single-series bar) */
+  --color-chart-income: #1baf7a;
+  --color-chart-expense: #eb6834;
+  --color-chart-bar: #2a78d6;
+  --color-chart-grid: #e1e0d9;
+  --color-chart-axis: #c3c2b7;
+  --color-meter-track: #cde2fb;
+  --color-status-warning: #fab219;
+  --color-status-critical: #d03b3b;
+}
+
+.dark {
+  color-scheme: dark;
+  --color-app: #0f172a;
+  --color-card: #1e293b;
+  --color-subtle: #334155;
+  --color-fg: #f1f5f9;
+  --color-muted: #cbd5e1;
+  --color-line: #334155;
+  --color-field: #94a3b8;
+  --color-income: #34d399;
+  --color-expense: #fb7185;
+  --color-warn: #fbbf24;
+  --color-accent: #4f46e5;
+  --color-accent-hover: #6366f1;
+  --color-accent-text: #a5b4fc;
+  --color-on-accent: #ffffff;
+  --color-accent-soft: #312e81;
+  --color-focus: #a5b4fc;
+  --color-danger-soft: #4c0519;
+  --color-warn-soft: #422006;
+
+  --color-chart-income: #199e70;
+  --color-chart-expense: #d95926;
+  --color-chart-bar: #3987e5;
+  --color-chart-grid: #334155;
+  --color-chart-axis: #475569;
+  --color-meter-track: #184f95;
+}
+
+body {
+  background-color: var(--color-app);
+  color: var(--color-fg);
+}

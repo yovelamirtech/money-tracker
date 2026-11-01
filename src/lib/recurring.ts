@@ -1,5 +1,5 @@
 import { addMonths, daysInMonth, pad2, toMonthKey } from './month'
-import type { MonthKey, RecurringRule, Transaction } from './types'
+import type { AppData, MonthKey, RecurringRule, Transaction } from './types'
 
 /** The date of a rule in a month; day 31 becomes the last day of shorter months. */
 export function dateForMonth(dayOfMonth: number, month: MonthKey): string {
@@ -84,4 +84,26 @@ export function resumeRule(rule: RecurringRule, currentMonth: MonthKey): Recurri
   const previous = addMonths(currentMonth, -1)
   const last = rule.lastGeneratedMonth && rule.lastGeneratedMonth > previous ? rule.lastGeneratedMonth : previous
   return { ...rule, active: true, lastGeneratedMonth: last < rule.startMonth ? undefined : last }
+}
+
+/** Runs generateRecurring on the whole app data. Returns the same object when nothing changed. */
+export function applyRecurring(data: AppData, upToMonth: MonthKey, createdAt: string, createId: () => string): AppData {
+  const { rules, created } = generateRecurring(data.recurring, data.transactions, upToMonth, createdAt, createId)
+  const rulesChanged = rules.some((rule, i) => rule !== data.recurring[i])
+  if (created.length === 0 && !rulesChanged) return data
+  return { ...data, recurring: rules, transactions: [...data.transactions, ...created] }
+}
+
+/** Deletes a rule. Transactions it already created stay, but are no longer marked as recurring. */
+export function deleteRule(data: AppData, ruleId: string): AppData {
+  return {
+    ...data,
+    recurring: data.recurring.filter((r) => r.id !== ruleId),
+    transactions: data.transactions.map((t) => {
+      if (t.recurringId !== ruleId) return t
+      const copy = { ...t }
+      delete copy.recurringId
+      return copy
+    }),
+  }
 }

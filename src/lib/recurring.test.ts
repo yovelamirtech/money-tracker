@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import { idSequence, makeRule, makeTransaction } from '../test/factories'
-import { createRuleFromTransaction, dateForMonth, generateRecurring, pauseRule, resumeRule } from './recurring'
+import { createDefaultAppData } from './appData'
+import {
+  applyRecurring,
+  createRuleFromTransaction,
+  dateForMonth,
+  deleteRule,
+  generateRecurring,
+  pauseRule,
+  resumeRule,
+} from './recurring'
 
 const NOW = '2026-11-01T08:00:00.000Z'
 
@@ -120,5 +129,36 @@ describe('pause / resume', () => {
     const resumed = resumeRule(rule, '2026-11')
     expect(resumed.lastGeneratedMonth).toBeUndefined()
     expect(generateRecurring([resumed], [], '2027-03', NOW, idSequence()).created).toHaveLength(1)
+  })
+})
+
+describe('applyRecurring', () => {
+  it('adds the created transactions and updated rules to the app data', () => {
+    const data = { ...createDefaultAppData(), recurring: [makeRule({ startMonth: '2026-10' })] }
+    const next = applyRecurring(data, '2026-11', NOW, idSequence())
+    expect(next.transactions).toHaveLength(2)
+    expect(next.recurring[0].lastGeneratedMonth).toBe('2026-11')
+  })
+
+  it('returns the same object when there is nothing to do', () => {
+    const data = createDefaultAppData()
+    expect(applyRecurring(data, '2026-11', NOW, idSequence())).toBe(data)
+    const upToDate = { ...data, recurring: [makeRule({ startMonth: '2026-10', lastGeneratedMonth: '2026-11' })] }
+    expect(applyRecurring(upToDate, '2026-11', NOW, idSequence())).toBe(upToDate)
+  })
+})
+
+describe('deleteRule', () => {
+  it('removes the rule and unmarks its transactions, keeping them', () => {
+    const data = {
+      ...createDefaultAppData(),
+      recurring: [makeRule({ id: 'rent' }), makeRule({ id: 'gym' })],
+      transactions: [makeTransaction({ id: 'a', recurringId: 'rent' }), makeTransaction({ id: 'b', recurringId: 'gym' })],
+    }
+    const next = deleteRule(data, 'rent')
+    expect(next.recurring.map((r) => r.id)).toEqual(['gym'])
+    expect(next.transactions).toHaveLength(2)
+    expect(next.transactions[0]).not.toHaveProperty('recurringId')
+    expect(next.transactions[1].recurringId).toBe('gym')
   })
 })

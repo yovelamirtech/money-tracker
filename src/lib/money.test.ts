@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatILS, parseAmount, toDecimalString } from './money'
+import { formatCompactILS, formatILS, parseAmount, toDecimalString } from './money'
 
 describe('parseAmount', () => {
   it.each([
@@ -75,5 +75,17 @@ describe('toDecimalString', () => {
     for (const agorot of [1, 29, 115, 1250, 999999]) {
       expect(parseAmount(toDecimalString(agorot))).toBe(agorot)
     }
+  })
+})
+
+describe('formatCompactILS', () => {
+  it.each([
+    [0, '₪0'],
+    [50000, '₪500'],
+    [250000, '₪2.5K'],
+    [1250000, '₪12.5K'],
+    [150000000, '₪1.5M'],
+  ])('%i → %s', (agorot, expected) => {
+    expect(formatCompactILS(agorot)).toBe(expected)
   })
 })
