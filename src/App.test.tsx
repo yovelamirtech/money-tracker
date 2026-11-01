@@ -94,6 +94,59 @@ describe('App', () => {
     confirmSpy.mockRestore()
   })
 
+  it('previews the amount and category while typing, newest entry last', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    const field = screen.getByLabelText('הזנה חדשה')
+    expect(screen.getByRole('button', { name: 'שליחה' })).toBeDisabled()
+
+    await user.type(field, '314 דלק')
+    expect(screen.getByText('₪314.00 · ללא קטגוריה')).toBeInTheDocument()
+    expect(screen.getByRole('status')).toBeEmptyDOMElement()
+    await user.type(field, '{Enter}')
+    expect(screen.getByRole('status')).toHaveTextContent('נרשם: דלק ₪314.00 · ללא קטגוריה')
+
+    await user.type(field, 'משכורת 9000')
+    expect(screen.getByText('₪9,000.00 · משכורת')).toBeInTheDocument()
+    await user.type(field, '{Enter}')
+
+    const rows = within(screen.getByRole('list', { name: 'הזנות אחרונות' })).getAllByRole('listitem')
+    expect(rows.map((li) => li.textContent)).toEqual([expect.stringContaining('דלק'), expect.stringContaining('משכורת')])
+  })
+
+  it('opening the entry tab goes straight into the field; coming back from an edit does not', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await user.type(screen.getByLabelText('הזנה חדשה'), 'קפה 18{Enter}')
+
+    await user.click(screen.getByRole('button', { name: 'חודש' }))
+    await user.click(screen.getByRole('button', { name: 'הזנה' }))
+    expect(screen.getByLabelText('הזנה חדשה')).toHaveFocus()
+
+    await user.click(screen.getByRole('button', { name: /^עריכת\s*קפה/ }))
+    await user.click(screen.getByRole('button', { name: 'ביטול' }))
+    expect(screen.getByRole('heading', { name: 'הזנות אחרונות' })).toHaveFocus()
+  })
+
+  it('keeps the entry bar on the keyboard: --kb and kb-open follow the visual viewport', () => {
+    const viewport = Object.assign(new EventTarget(), { height: window.innerHeight, offsetTop: 0 })
+    vi.stubGlobal('visualViewport', viewport)
+    const { unmount } = render(<App />)
+    const html = document.documentElement
+    expect(html).not.toHaveClass('kb-open')
+
+    viewport.height = window.innerHeight - 300
+    viewport.dispatchEvent(new Event('resize'))
+    expect(html).toHaveClass('kb-open')
+    expect(html.style.getPropertyValue('--kb')).toBe('300px')
+
+    viewport.height = window.innerHeight
+    viewport.dispatchEvent(new Event('resize'))
+    expect(html).not.toHaveClass('kb-open')
+    unmount()
+    vi.unstubAllGlobals()
+  })
+
   it('shows an error for an entry without a valid amount, and saves nothing', async () => {
     const user = userEvent.setup()
     render(<App />)
@@ -107,10 +160,11 @@ describe('App', () => {
     await user.type(field, ' 1.234{Enter}')
     expect(screen.getByRole('alert')).toHaveTextContent('הסכום לא תקין')
 
-    // Typing again clears the error; an empty field sends nothing
+    // Typing again clears the error; an empty field can't be sent
     await user.clear(field)
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'שליחה' }))
+    expect(screen.getByRole('button', { name: 'שליחה' })).toBeDisabled()
+    await user.type(field, '{Enter}')
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
     expect(loadTransactions()).toEqual([])
   })

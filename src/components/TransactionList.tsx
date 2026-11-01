@@ -15,6 +15,8 @@ interface TransactionListProps {
   showYear?: boolean
   /** Show the note as the title and the category below it (for the entry screen, where the note is what was typed). */
   noteFirst?: boolean
+  /** A row to flash briefly, e.g. the entry that was just added. */
+  highlightId?: string | null
 }
 
 export default function TransactionList({
@@ -26,6 +28,7 @@ export default function TransactionList({
   emptyText,
   showYear = false,
   noteFirst = false,
+  highlightId = null,
 }: TransactionListProps) {
   const { t, categoryName } = useI18n()
 
@@ -52,7 +55,12 @@ export default function TransactionList({
         const detail = noteFirst && tx.note ? name : tx.note
 
         return (
-          <li key={tx.id} className="flex items-center gap-1 p-2">
+          <li
+            key={tx.id}
+            className={`flex items-center gap-1 p-2 transition-colors duration-700 first:rounded-t-2xl last:rounded-b-2xl ${
+              tx.id === highlightId ? 'bg-accent-soft' : ''
+            }`}
+          >
             <button
               type="button"
               onClick={() => onEdit(tx)}

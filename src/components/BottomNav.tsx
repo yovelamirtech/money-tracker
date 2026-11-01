@@ -20,7 +20,7 @@ export default function BottomNav({ current, onChange }: BottomNavProps) {
   return (
     <nav
       aria-label={t('navLabel')}
-      className="fixed inset-x-0 bottom-0 z-10 border-t border-line bg-card pb-[env(safe-area-inset-bottom)]"
+      className="fixed inset-x-0 bottom-0 z-10 border-t border-line bg-card pb-[env(safe-area-inset-bottom)] [.kb-open_&]:hidden"
     >
       <ul className="mx-auto grid max-w-md grid-cols-4">
         {tabs.map(({ tab, label, icon }) => {
