@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatILS, parseAmount } from './money'
+import { formatILS, parseAmount, toDecimalString } from './money'
 
 describe('parseAmount', () => {
   it.each([
@@ -56,5 +56,24 @@ describe('formatILS', () => {
     [-5000, '-₪50.00'],
   ])('formats %i agorot as %s', (agorot, expected) => {
     expect(formatILS(agorot)).toBe(expected)
+  })
+})
+
+describe('toDecimalString', () => {
+  it.each([
+    [1250, '12.50'],
+    [120000, '1200.00'],
+    [5, '0.05'],
+    [0, '0.00'],
+    [-5, '-0.05'],
+    [-123456, '-1234.56'],
+  ])('%i → %s', (agorot, expected) => {
+    expect(toDecimalString(agorot)).toBe(expected)
+  })
+
+  it('round-trips through parseAmount', () => {
+    for (const agorot of [1, 29, 115, 1250, 999999]) {
+      expect(parseAmount(toDecimalString(agorot))).toBe(agorot)
+    }
   })
 })

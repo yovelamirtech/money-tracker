@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import { parseAmount } from './money'
-import { filterByMonth, groupByCategory, sortNewestFirst, summarize } from './summary'
+import {
+  compareExpensesByCategory,
+  filterByMonth,
+  groupByCategory,
+  monthlyTotals,
+  savingsRate,
+  sortNewestFirst,
+  summarize,
+} from './summary'
 import type { Transaction } from './types'
 
 let nextId = 1
@@ -140,5 +148,62 @@ describe('sortNewestFirst', () => {
     const copy = [...list]
     sortNewestFirst(list)
     expect(list).toEqual(copy)
+  })
+})
+
+describe('savingsRate', () => {
+  it('is the saved share of income as a whole percent', () => {
+    expect(savingsRate({ income: 1000000, expense: 750000, balance: 250000 })).toBe(25)
+    expect(savingsRate({ income: 1000000, expense: 0, balance: 1000000 })).toBe(100)
+  })
+
+  it('rounds toward zero and can be negative', () => {
+    expect(savingsRate({ income: 300, expense: 200, balance: 100 })).toBe(33)
+    expect(savingsRate({ income: 1000, expense: 1500, balance: -500 })).toBe(-50)
+    expect(savingsRate({ income: 300, expense: 400, balance: -100 })).toBe(-33)
+  })
+
+  it('is null without income', () => {
+    expect(savingsRate({ income: 0, expense: 500, balance: -500 })).toBeNull()
+  })
+})
+
+describe('monthlyTotals', () => {
+  it('summarizes each month in order, including empty months', () => {
+    const transactions = [
+      makeTransaction({ date: '2026-09-30', amountAgorot: 100 }),
+      makeTransaction({ date: '2026-11-01', type: 'income', amountAgorot: 500 }),
+      makeTransaction({ date: '2026-11-15', amountAgorot: 200 }),
+    ]
+    expect(monthlyTotals(transactions, ['2026-09', '2026-10', '2026-11'])).toEqual([
+      { month: '2026-09', income: 0, expense: 100, balance: -100 },
+      { month: '2026-10', income: 0, expense: 0, balance: 0 },
+      { month: '2026-11', income: 500, expense: 200, balance: 300 },
+    ])
+  })
+})
+
+describe('compareExpensesByCategory', () => {
+  it('lists the biggest changes first, up or down, and leaves out unchanged categories and income', () => {
+    const previous = [
+      makeTransaction({ categoryId: 'food', amountAgorot: 100000 }),
+      makeTransaction({ categoryId: 'bills', amountAgorot: 30000 }),
+      makeTransaction({ categoryId: 'health', amountAgorot: 5000 }),
+    ]
+    const current = [
+      makeTransaction({ categoryId: 'food', amountAgorot: 60000 }),
+      makeTransaction({ categoryId: 'bills', amountAgorot: 30000 }),
+      makeTransaction({ categoryId: 'shopping', amountAgorot: 20000 }),
+      makeTransaction({ type: 'income', categoryId: 'salary', amountAgorot: 900000 }),
+    ]
+    expect(compareExpensesByCategory(current, previous)).toEqual([
+      { categoryId: 'food', current: 60000, previous: 100000, change: -40000 },
+      { categoryId: 'shopping', current: 20000, previous: 0, change: 20000 },
+      { categoryId: 'health', current: 0, previous: 5000, change: -5000 },
+    ])
+  })
+
+  it('is empty for two empty months', () => {
+    expect(compareExpensesByCategory([], [])).toEqual([])
   })
 })

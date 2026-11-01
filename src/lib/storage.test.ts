@@ -1,6 +1,7 @@
-import { describe, expect, it } from 'vitest'
-import { loadTransactions, saveTransactions, STORAGE_KEY } from './storage'
-import type { Transaction } from './types'
+import { describe, expect, it, vi } from 'vitest'
+import { createDefaultAppData } from './appData'
+import { loadData, loadTransactions, saveData, saveTransactions, STORAGE_KEY } from './storage'
+import type { AppData, Transaction } from './types'
 
 const sample: Transaction[] = [
   {
@@ -49,4 +50,41 @@ describe('storage', () => {
       expect(loadTransactions()).toEqual([])
     },
   )
+})
+
+describe('loadData / saveData', () => {
+  it('returns the default data when storage is empty', () => {
+    expect(loadData()).toEqual(createDefaultAppData())
+  })
+
+  it('save → load round-trip keeps every part', () => {
+    const data: AppData = {
+      ...createDefaultAppData(),
+      transactions: sample,
+      budgets: [{ categoryId: 'food', limitAgorot: 100000 }],
+      settings: { theme: 'dark', language: 'en', lastCategoryId: { expense: 'food' } },
+    }
+    saveData(data)
+    expect(loadData()).toEqual(data)
+  })
+
+  it('saveTransactions keeps the other stored parts', () => {
+    saveData({ ...createDefaultAppData(), budgets: [{ categoryId: 'food', limitAgorot: 5 }] })
+    saveTransactions(sample)
+    expect(loadData().budgets).toEqual([{ categoryId: 'food', limitAgorot: 5 }])
+    expect(loadData().transactions).toEqual(sample)
+  })
+
+  it('returns the default data for corrupt JSON', () => {
+    localStorage.setItem(STORAGE_KEY, '{not valid json')
+    expect(loadData()).toEqual(createDefaultAppData())
+  })
+
+  it('does not crash when storage throws', () => {
+    const spy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('QuotaExceededError')
+    })
+    expect(() => saveData(createDefaultAppData())).not.toThrow()
+    spy.mockRestore()
+  })
 })
