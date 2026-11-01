@@ -50,10 +50,11 @@ export default function TransactionList({
           <li key={tx.id} className="flex items-center gap-1 p-2">
             <button
               type="button"
-              aria-label={`${t('editTransaction', { name })}, ${amount}, ${date}`}
               onClick={() => onEdit(tx)}
               className={`flex min-w-0 flex-1 items-center gap-3 rounded-xl p-1 text-start hover:bg-subtle ${focusRing}`}
             >
+              {/* The accessible name is the visible text, prefixed with "Edit" for screen readers */}
+              <span className="sr-only">{t('editPrefix')} </span>
               <CategoryIcon category={category} />
               <span className="min-w-0 flex-1">
                 <span className="flex items-center gap-1 font-medium">

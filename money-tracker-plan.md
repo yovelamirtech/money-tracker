@@ -39,10 +39,14 @@ Everything is stored locally in the browser. No backend, no login. Currency: ₪
 - ESLint (flat config; create-vite now defaults to oxlint, we switched back to ESLint)
 - localStorage for persistence
 - GitHub Actions for CI, GitHub Pages for deploy
+- `vite-plugin-pwa` (Workbox) for the installable/offline app (Phase 4)
+- Playwright + `@axe-core/playwright` for end-to-end and accessibility tests, `@vitest/coverage-v8` for coverage (Phase 4)
 
 Install current stable versions and check the official docs for setup. Don't rely on memory for config syntax.
 
-**UI:** Hebrew, right-to-left (`<html lang="he" dir="rtl">`), mobile-first, large touch targets.
+**UI:** Hebrew, right-to-left (`<html lang="he" dir="rtl">`), mobile-first, large touch targets. English (LTR) is available as a setting (4.8).
+
+**Colors:** components use semantic Tailwind tokens defined in `src/index.css` (`bg-card`, `text-muted`, `text-income`, ...), never raw palette colors, so dark mode only redefines the variables under `.dark`.
 
 ---
 
@@ -99,6 +103,30 @@ interface Transaction {
 ```
 
 Store everything under one versioned localStorage key, e.g. `money-tracker:v1`.
+
+**Phase 2–4 additions** (all optional fields, so old `{ transactions }` data still loads; see `src/lib/types.ts`):
+
+```ts
+interface Category { /* … */ color?: CategoryColor; icon?: string }   // color = a name from src/lib/colors.ts
+interface Transaction { /* … */ recurringId?: string }                 // set when created by a recurring rule
+
+interface RecurringRule {
+  id: string; type: TransactionType; amountAgorot: number; categoryId: string
+  dayOfMonth: number;            // 1–31, clamped to shorter months
+  note?: string
+  startMonth: MonthKey; lastGeneratedMonth?: MonthKey; active: boolean; createdAt: string
+}
+interface Budget { categoryId: string; limitAgorot: number }          // expense categories only
+interface Settings { theme: 'system' | 'light' | 'dark'; language: 'he' | 'en'; lastCategoryId: { income?: string; expense?: string } }
+
+// stored as: { transactions, categories, recurring, budgets, settings }
+```
+
+Rules:
+- The two "אחר" categories (`other-income`, `other-expense`) can't be deleted. Deleting another category moves its transactions and recurring rules to "אחר" of the same type and removes its budget.
+- Recurring rules generate one transaction per month up to the current month, on app start and when the app comes back to the foreground. A month is never generated twice (`lastGeneratedMonth` + a check for an existing transaction), so a deleted generated transaction doesn't come back. Resuming a paused rule continues from the current month without filling the paused months.
+- Budget levels: "near" from 80% of the limit, "over" only when spending is above the limit (integer math).
+- Loading from localStorage is lenient (drops broken items, keeps the rest). Importing a backup is strict (any invalid item, duplicate id or unknown category rejects the whole file).
 
 ### Default categories (seed data)
 
@@ -157,47 +185,47 @@ These are the heart of the testing lesson. Cover them well: empty list, only inc
 | 1.8 | Component test for the main flow | add expense → appears in list → totals update → delete → totals update | ✅ | `src/App.test.tsx`, plus cancel-delete and month navigation tests. |
 | 1.9 | README | what it is, screenshot, live link, how to run and test, CI status badge | ✅ | Badge, live link, screenshot (`docs/screenshot.jpg`), run/test instructions. |
 
-**🛑 Stop here until the owner says to continue.**
+**🛑 Stop here until the owner says to continue.** → The owner approved building the rest of the plan on 2026-11-01.
 
 ### Phase 2 — A genuinely useful app
 
 | # | Task | Done when | Status | Notes / what's left |
 |---|------|-----------|--------|---------------------|
-| 2.1 | Edit transaction | all fields editable, same validation as add | ⬜ | |
-| 2.2 | Manage categories | add, rename, delete (transactions move to "אחר"); optional icon or color | ⬜ | |
-| 2.3 | Search and filter | by text in note, category, type, amount range | ⬜ | |
-| 2.4 | Recurring transactions | monthly items (rent, salary, subscriptions) generated automatically for each new month, no duplicates; generation logic unit-tested | ⬜ | |
-| 2.5 | Quick add | fast entry from the main screen; remembers the last-used category | ⬜ | |
+| 2.1 | Edit transaction | all fields editable, same validation as add | ✅ | Tap a transaction (month list or search results) to open the same form, pre-filled (`TransactionFormScreen`, renamed from `AddTransactionScreen`). Keeps `id`, `createdAt` and `recurringId`. Delete stays on the list. |
+| 2.2 | Manage categories | add, rename, delete (transactions move to "אחר"); optional icon or color | ✅ | Settings → קטגוריות. Name must be unique per type. Emoji icon + one of 9 colors (`src/lib/colors.ts`), shown as a badge. Logic in `src/lib/categories.ts`. |
+| 2.3 | Search and filter | by text in note, category, type, amount range | ✅ | Search tab, across all months, live results with totals. `src/lib/filter.ts`. Invalid amount bounds show an error and are ignored. |
+| 2.4 | Recurring transactions | monthly items (rent, salary, subscriptions) generated automatically for each new month, no duplicates; generation logic unit-tested | ✅ | "חוזר כל חודש" checkbox when adding. Settings → תנועות קבועות to pause/resume/delete. `src/lib/recurring.ts` (rules above). Editing a rule's amount isn't supported yet: delete and re-create it. |
+| 2.5 | Quick add | fast entry from the main screen; remembers the last-used category | ✅ | Card on the month screen: type, category, amount, dated today. Last category per type is saved in settings and also used as the full form's default. |
 
 ### Phase 3 — Insights and budgets
 
 | # | Task | Done when | Status | Notes / what's left |
 |---|------|-----------|--------|---------------------|
-| 3.1 | Spending by category chart | for the selected month | ⬜ | |
-| 3.2 | Monthly trend | income vs expenses over the last 6–12 months | ⬜ | |
-| 3.3 | Budgets per category | monthly limit; progress bar; warning when near or over; tested | ⬜ | |
-| 3.4 | Savings rate | % of income saved per month | ⬜ | |
-| 3.5 | Month-over-month comparison | biggest changes by category highlighted | ⬜ | |
+| 3.1 | Spending by category chart | for the selected month | ✅ | Insights tab. Horizontal bars (HTML/CSS, no chart library), amount + share at each bar, "show as table" view. |
+| 3.2 | Monthly trend | income vs expenses over the last 6–12 months | ✅ | SVG paired columns with a 6/12 month toggle, tap a month for its numbers, table view. Colors checked for color-blind safety. Time runs left→right in both languages. |
+| 3.3 | Budgets per category | monthly limit; progress bar; warning when near or over; tested | ✅ | Settings → תקציבים (or from Insights). Progress bars on Insights; a warning banner on the month screen. Status always has icon + text. `src/lib/budget.ts`. |
+| 3.4 | Savings rate | % of income saved per month | ✅ | `savingsRate` in `summary.ts` (whole %, toward zero, negative when overspending, `—` without income). On the month summary and Insights. |
+| 3.5 | Month-over-month comparison | biggest changes by category highlighted | ✅ | Insights: top 5 expense changes vs the previous month, biggest one highlighted. `compareExpensesByCategory` in `summary.ts`. |
 
 ### Phase 4 — Quality and polish
 
 | # | Task | Done when | Status | Notes / what's left |
 |---|------|-----------|--------|---------------------|
-| 4.1 | PWA | installable on iPhone home screen; works offline | ⬜ | |
-| 4.2 | Backup | export and import all data as JSON; import validates the data | ⬜ | |
-| 4.3 | CSV export | transactions for a chosen range | ⬜ | |
-| 4.4 | Dark mode | follows the system setting plus a manual toggle | ⬜ | |
-| 4.5 | Accessibility pass | labels, focus states, contrast, keyboard navigation | ⬜ | |
-| 4.6 | E2E tests (Playwright) in CI | main flow tested end-to-end on every PR | ⬜ | |
-| 4.7 | Coverage threshold in CI | e.g. ≥ 80% on `src/lib`; CI fails below it | ⬜ | |
-| 4.8 | English UI (i18n) | language switch; LTR handled correctly | ⬜ | |
+| 4.1 | PWA | installable on iPhone home screen; works offline | ✅ | `vite-plugin-pwa` (auto-update service worker, manifest), Apple meta tags + `apple-touch-icon.png`. New ₪ icon (`public/favicon.svg`; PNGs rendered from it). Offline tested in `e2e/offline.spec.ts`. Not yet tried on a real iPhone. |
+| 4.2 | Backup | export and import all data as JSON; import validates the data | ✅ | Settings → נתונים. File format `{ format, version, exportedAt, data }` (`src/lib/backup.ts`). Import asks for confirmation and replaces everything. |
+| 4.3 | CSV export | transactions for a chosen range | ✅ | Settings → from/to dates (default: current month). UTF-8 with BOM for Excel, formula-injection safe cells (`src/lib/csv.ts`). |
+| 4.4 | Dark mode | follows the system setting plus a manual toggle | ✅ | System / light / dark in Settings. `.dark` class on `<html>` (`useTheme`), plus a small script in `index.html` that applies the saved theme before first paint. |
+| 4.5 | Accessibility pass | labels, focus states, contrast, keyboard navigation | ✅ | Focus rings on every control, focus moves to the screen heading on navigation, `aria-current` in the nav, meters/alerts/live regions. axe WCAG 2.1 AA scan of every screen in light and dark runs in E2E (`e2e/a11y.spec.ts`), plus a keyboard-only flow. |
+| 4.6 | E2E tests (Playwright) in CI | main flow tested end-to-end on every PR | ✅ | `e2e/` against the production build on a Pixel 7–sized Chromium. New `e2e` CI job; deploy waits for it. Report uploaded on failure. `npm run test:e2e`. |
+| 4.7 | Coverage threshold in CI | e.g. ≥ 80% on `src/lib`; CI fails below it | ✅ | `npm run test:coverage` (v8) with 80% thresholds on `src/lib`, used in CI instead of `npm test`. Currently ~99%. |
+| 4.8 | English UI (i18n) | language switch; LTR handled correctly | ✅ | `src/i18n/` (typed dictionaries, small context, no library). Sets `lang`/`dir` on `<html>`; arrows flip; default category names are translated until renamed. |
 
 ### Phase 5 — Optional, only if the owner asks
 
 | # | Task | Done when | Status | Notes / what's left |
 |---|------|-----------|--------|---------------------|
-| 5.1 | Sync across devices | backend chosen with the owner (e.g. Supabase or Firebase); storage module swapped without touching the logic | ⬜ | |
-| 5.2 | Bank / credit card CSV import | map columns, de-duplicate, auto-suggest categories | ⬜ | |
+| 5.1 | Sync across devices | backend chosen with the owner (e.g. Supabase or Firebase); storage module swapped without touching the logic | ⏸️ | Needs the owner to choose a backend and create an account/project. Storage is still one module (`storage.ts`, `loadData`/`saveData`). Backup export/import (4.2) can move data between devices meanwhile. |
+| 5.2 | Bank / credit card CSV import | map columns, de-duplicate, auto-suggest categories | ⏸️ | Optional, waits for the owner. Needs sample export files from the owner's bank/card to map the columns. |
 
 ---
 
@@ -209,3 +237,4 @@ Add one line at the end of every session.
 |------|-----------------|---------------|-----------|
 | 2026-10-23 | Claude Code (Opus 5.5) | Phase 0 + 1 built. lint, 77 tests and build pass; checked in browser at mobile size. | Owner reviews names; create GitHub repo and push (finishes 0.5, 0.6, 1.9). |
 | 2026-10-23 | Claude Code (Opus 5.5) | Created public repo yovelamirtech/money-tracker, enabled Pages (Actions), pushed. CI green, site live. README finished. | Owner reviews names. Then the class demo (red PR on `parseAmount`). Phase 2 waits for the owner. |
+| 2026-11-01 | Claude Code (Opus 5.5) | Owner approved the rest of the plan. Built Phases 2, 3 and 4 on branch `feat/full-app`. lint, 247 unit/component tests (src/lib coverage ~99%), build and 9 Playwright E2E tests (incl. offline + axe WCAG AA) pass. | Owner reviews the PR and tries the app on an iPhone (install to home screen). Phase 5 needs owner decisions (backend for sync, bank CSV samples). |

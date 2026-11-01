@@ -32,7 +32,7 @@ describe('edit transaction (2.1)', () => {
     seed({ transactions: [makeTransaction({ id: 'x', amountAgorot: 1250, categoryId: 'food', date: today, note: 'פלאפל' })] })
     render(<App />)
 
-    await user.click(screen.getByRole('button', { name: /^עריכת אוכל/ }))
+    await user.click(screen.getByRole('button', { name: /^עריכת\s*אוכל/ }))
     expect(screen.getByRole('heading', { name: 'עריכת תנועה' })).toBeInTheDocument()
     expect(screen.getByLabelText('סכום (₪)')).toHaveValue('12.50')
     expect(screen.getByLabelText('הערה (לא חובה)')).toHaveValue('פלאפל')
@@ -56,7 +56,7 @@ describe('edit transaction (2.1)', () => {
     seed({ transactions: [makeTransaction({ id: 'x', date: today })] })
     render(<App />)
 
-    await user.click(screen.getByRole('button', { name: /^עריכת אוכל/ }))
+    await user.click(screen.getByRole('button', { name: /^עריכת\s*אוכל/ }))
     await user.clear(screen.getByLabelText('סכום (₪)'))
     await user.type(screen.getByLabelText('סכום (₪)'), '1.234')
     await user.click(screen.getByRole('button', { name: 'שמירה' }))
@@ -326,7 +326,7 @@ describe('search and filter (2.3)', () => {
     seed({ transactions: [makeTransaction({ categoryId: 'food', note: 'קפה', date: '2025-01-05' })] })
     render(<App />)
     await user.click(screen.getByRole('button', { name: 'חיפוש' }))
-    await user.click(screen.getByRole('button', { name: /^עריכת אוכל/ }))
+    await user.click(screen.getByRole('button', { name: /^עריכת\s*אוכל/ }))
     await user.click(screen.getByRole('button', { name: 'ביטול' }))
     expect(screen.getByRole('heading', { name: 'חיפוש וסינון' })).toBeInTheDocument()
   })
