@@ -54,11 +54,18 @@ export interface Settings {
   lastCategoryId: Partial<Record<TransactionType, string>>
 }
 
+/** A learned match: an entry whose note is `note` (normalized) gets `categoryId`. */
+export interface NoteRule {
+  note: string // normalized with normalizeNote()
+  categoryId: string
+}
+
 /** Everything the app stores. */
 export interface AppData {
   transactions: Transaction[]
   categories: Category[]
   recurring: RecurringRule[]
   budgets: Budget[]
+  noteRules: NoteRule[]
   settings: Settings
 }

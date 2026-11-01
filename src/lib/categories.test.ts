@@ -16,16 +16,20 @@ function sampleData(): AppData {
   return {
     ...createDefaultAppData(),
     transactions: [
-      makeTransaction({ id: 'a', categoryId: 'food' }),
+      makeTransaction({ id: 'a', categoryId: 'groceries' }),
       makeTransaction({ id: 'b', categoryId: 'bills' }),
-      makeTransaction({ id: 'c', categoryId: 'food' }),
+      makeTransaction({ id: 'c', categoryId: 'groceries' }),
     ],
-    recurring: [makeRule({ id: 'r', categoryId: 'food' })],
+    recurring: [makeRule({ id: 'r', categoryId: 'groceries' })],
     budgets: [
-      { categoryId: 'food', limitAgorot: 100000 },
+      { categoryId: 'groceries', limitAgorot: 100000 },
       { categoryId: 'bills', limitAgorot: 50000 },
     ],
-    settings: { theme: 'system', language: 'he', lastCategoryId: { expense: 'food', income: 'salary' } },
+    noteRules: [
+      { note: 'שופרסל', categoryId: 'groceries' },
+      { note: 'חשמל', categoryId: 'bills' },
+    ],
+    settings: { theme: 'system', language: 'he', lastCategoryId: { expense: 'groceries', income: 'salary' } },
   }
 }
 
@@ -37,13 +41,13 @@ describe('validateCategoryName', () => {
   })
 
   it('rejects a name already used by the same type, ignoring spaces and case', () => {
-    expect(validateCategoryName(categories, ' אוכל ', 'expense')).toBe('duplicate')
+    expect(validateCategoryName(categories, ' סופר ', 'expense')).toBe('duplicate')
     expect(validateCategoryName([{ id: 'x', name: 'Pets', type: 'expense' }], 'pets', 'expense')).toBe('duplicate')
   })
 
   it('allows the same name in the other type, and keeping a category its own name', () => {
-    expect(validateCategoryName(categories, 'אוכל', 'income')).toBeNull()
-    expect(validateCategoryName(categories, 'אוכל', 'expense', 'food')).toBeNull()
+    expect(validateCategoryName(categories, 'סופר', 'income')).toBeNull()
+    expect(validateCategoryName(categories, 'סופר', 'expense', 'groceries')).toBeNull()
   })
 })
 
@@ -54,10 +58,10 @@ describe('addCategory / updateCategory', () => {
   })
 
   it('renames and recolors without changing id or type, and drops an empty icon', () => {
-    const data = updateCategory(createDefaultAppData(), 'food', { name: 'סופר', color: 'green', icon: ' ' })
-    expect(data.categories.find((c) => c.id === 'food')).toEqual({
-      id: 'food',
-      name: 'סופר',
+    const data = updateCategory(createDefaultAppData(), 'groceries', { name: 'מכולת', color: 'green', icon: ' ' })
+    expect(data.categories.find((c) => c.id === 'groceries')).toEqual({
+      id: 'groceries',
+      name: 'מכולת',
       type: 'expense',
       color: 'green',
     })
@@ -65,17 +69,18 @@ describe('addCategory / updateCategory', () => {
 })
 
 describe('deleteCategory', () => {
-  it('moves its transactions and recurring rules to "אחר" and removes its budget', () => {
-    const data = deleteCategory(sampleData(), 'food')
+  it('moves its transactions and recurring rules to "אחר" and removes its budget and note rules', () => {
+    const data = deleteCategory(sampleData(), 'groceries')
 
-    expect(data.categories.some((c) => c.id === 'food')).toBe(false)
+    expect(data.categories.some((c) => c.id === 'groceries')).toBe(false)
     expect(data.transactions.map((t) => t.categoryId)).toEqual(['other-expense', 'bills', 'other-expense'])
     expect(data.recurring[0].categoryId).toBe('other-expense')
     expect(data.budgets).toEqual([{ categoryId: 'bills', limitAgorot: 50000 }])
+    expect(data.noteRules).toEqual([{ note: 'חשמל', categoryId: 'bills' }])
   })
 
   it('forgets it as the last used category', () => {
-    const data = deleteCategory(sampleData(), 'food')
+    const data = deleteCategory(sampleData(), 'groceries')
     expect(data.settings.lastCategoryId).toEqual({ income: 'salary' })
   })
 
@@ -89,13 +94,13 @@ describe('deleteCategory', () => {
     expect(deleteCategory(start, 'other-expense')).toBe(start)
     expect(deleteCategory(start, 'nope')).toBe(start)
     expect(isOtherCategory('other-income')).toBe(true)
-    expect(isOtherCategory('food')).toBe(false)
+    expect(isOtherCategory('groceries')).toBe(false)
   })
 })
 
 describe('countTransactionsInCategory', () => {
   it('counts transactions of one category', () => {
-    expect(countTransactionsInCategory(sampleData(), 'food')).toBe(2)
+    expect(countTransactionsInCategory(sampleData(), 'groceries')).toBe(2)
     expect(countTransactionsInCategory(sampleData(), 'health')).toBe(0)
   })
 })
@@ -108,9 +113,9 @@ describe('defaultCategoryFor', () => {
   })
 
   it('falls back to the first category when the last one is gone or of the other type', () => {
-    expect(defaultCategoryFor(categories, 'expense', {})).toBe('food')
-    expect(defaultCategoryFor(categories, 'expense', { expense: 'deleted' })).toBe('food')
-    expect(defaultCategoryFor(categories, 'income', { income: 'food' })).toBe('salary')
+    expect(defaultCategoryFor(categories, 'expense', {})).toBe('bills')
+    expect(defaultCategoryFor(categories, 'expense', { expense: 'deleted' })).toBe('bills')
+    expect(defaultCategoryFor(categories, 'income', { income: 'groceries' })).toBe('salary')
     expect(defaultCategoryFor([], 'income', {})).toBe('')
   })
 })

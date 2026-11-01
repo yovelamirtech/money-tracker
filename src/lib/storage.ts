@@ -3,13 +3,20 @@ import { createDefaultAppData, readAppDataLenient } from './appData'
 import type { AppData, Transaction } from './types'
 
 /**
- * One versioned key. v1 started as `{ transactions }`; later fields (categories, recurring,
- * budgets, settings) were added as optional, so old data still loads without a migration.
+ * One versioned key. Fields added later (like noteRules) are optional, so older data under the
+ * same key still loads without a migration.
  */
-export const STORAGE_KEY = 'money-tracker:v1'
+export const STORAGE_KEY = 'money-tracker:v2'
+
+/**
+ * v1 used the old category set. Moving to v2 started everyone fresh (by choice: there was no real
+ * data yet), so v1 is removed on load rather than migrated.
+ */
+export const OLD_STORAGE_KEYS = ['money-tracker:v1']
 
 export function loadData(): AppData {
   try {
+    for (const key of OLD_STORAGE_KEYS) localStorage.removeItem(key)
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return createDefaultAppData()
     return readAppDataLenient(JSON.parse(raw))

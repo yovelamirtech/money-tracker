@@ -14,10 +14,12 @@ test('loads and works offline after the first visit', async ({ page, context }) 
 
   await context.setOffline(true)
   await page.reload()
-  await expect(page.getByRole('button', { name: '+ הוספת תנועה' })).toBeVisible()
+  await expect(page.getByLabel('הזנה חדשה')).toBeVisible()
 
-  await page.getByLabel('סכום להוספה מהירה').fill('5')
-  await page.getByRole('button', { name: 'הוספה', exact: true }).click()
+  await page.getByLabel('הזנה חדשה').fill('קפה 5')
+  await page.getByRole('button', { name: 'שליחה' }).click()
+  await expect(page.getByRole('list', { name: 'הזנות אחרונות' })).toContainText('קפה')
+  await page.getByRole('navigation').getByRole('button', { name: 'חודש' }).click()
   await expect(page.getByRole('group', { name: 'הוצאות' })).toContainText('₪5.00')
 })
 

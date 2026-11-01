@@ -47,7 +47,7 @@ export function updateCategory(
 
 /**
  * Deletes a category. Its transactions and recurring rules move to "אחר" of the same type,
- * its budget is dropped, and it is forgotten as the last-used category. "אחר" itself can't be deleted.
+ * its budget and learned note rules are dropped, and it is forgotten as the last-used category. "אחר" itself can't be deleted.
  */
 export function deleteCategory(data: AppData, id: string): AppData {
   const category = data.categories.find((c) => c.id === id)
@@ -63,6 +63,7 @@ export function deleteCategory(data: AppData, id: string): AppData {
     transactions: data.transactions.map((t) => (t.categoryId === id ? { ...t, categoryId: otherId } : t)),
     recurring: data.recurring.map((r) => (r.categoryId === id ? { ...r, categoryId: otherId } : r)),
     budgets: data.budgets.filter((b) => b.categoryId !== id),
+    noteRules: data.noteRules.filter((r) => r.categoryId !== id),
     settings: { ...data.settings, lastCategoryId },
   }
 }

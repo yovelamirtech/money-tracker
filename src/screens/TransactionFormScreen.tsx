@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import ScreenHeader from '../components/ScreenHeader'
 import SegmentedControl from '../components/SegmentedControl'
 import { fieldClass, focusRing, primaryButton, secondaryButton } from '../components/ui'
+import { UNCATEGORIZED_ID } from '../data/defaultCategories'
 import { useI18n } from '../i18n/i18n'
 import { defaultCategoryFor } from '../lib/categories'
 import { createId } from '../lib/id'
@@ -112,6 +113,10 @@ export default function TransactionFormScreen({
         <label className="flex flex-col gap-1">
           <span className="font-medium">{t('category')}</span>
           <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} className={fieldClass}>
+            {/* Only an entry that is still uncategorized can stay that way. */}
+            {type === 'expense' && initial?.categoryId === UNCATEGORIZED_ID && (
+              <option value={UNCATEGORIZED_ID}>{t('uncategorized')}</option>
+            )}
             {categoriesOfType.map((c) => (
               <option key={c.id} value={c.id}>
                 {categoryName(c)}

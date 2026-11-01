@@ -1,67 +1,117 @@
+import { useState } from 'react'
 import BudgetAlerts from '../components/BudgetAlerts'
+import BudgetProgressList from '../components/BudgetProgressList'
+import CategoryChart from '../components/CategoryChart'
+import MonthComparison from '../components/MonthComparison'
 import MonthNavigator from '../components/MonthNavigator'
-import QuickAdd from '../components/QuickAdd'
+import SegmentedControl from '../components/SegmentedControl'
 import SummaryCards from '../components/SummaryCards'
 import TransactionList from '../components/TransactionList'
-import { primaryButton } from '../components/ui'
+import TrendChart from '../components/TrendChart'
+import { card, sectionTitle, secondaryButton } from '../components/ui'
 import { useI18n } from '../i18n/i18n'
 import { budgetProgress } from '../lib/budget'
-import { filterByMonth, sortNewestFirst, summarize } from '../lib/summary'
-import type { Budget, Category, MonthKey, Settings, Transaction } from '../lib/types'
+import { addMonths, lastMonths } from '../lib/month'
+import { compareExpensesByCategory, filterByMonth, groupByCategory, monthlyTotals, sortNewestFirst, summarize } from '../lib/summary'
+import type { Budget, Category, MonthKey, Transaction } from '../lib/types'
 
 interface MonthScreenProps {
   month: MonthKey
   transactions: Transaction[]
   categories: Category[]
   budgets: Budget[]
-  lastCategoryId: Settings['lastCategoryId']
   onMonthChange: (month: MonthKey) => void
-  onAdd: () => void
-  onQuickAdd: (transaction: Transaction) => void
   onEdit: (transaction: Transaction) => void
   onDelete: (id: string) => void
-  onOpenInsights: () => void
+  onEditBudgets: () => void
 }
 
+type TrendRange = '6' | '12'
+
+/** The monthly check: totals, budgets, where the money went, changes, the trend, and every transaction. */
 export default function MonthScreen({
   month,
   transactions,
   categories,
   budgets,
-  lastCategoryId,
   onMonthChange,
-  onAdd,
-  onQuickAdd,
   onEdit,
   onDelete,
-  onOpenInsights,
+  onEditBudgets,
 }: MonthScreenProps) {
   const { t } = useI18n()
-  const monthTransactions = filterByMonth(transactions, month)
-  const summary = summarize(monthTransactions)
+  const [range, setRange] = useState<TrendRange>('6')
+
+  const current = filterByMonth(transactions, month)
+  const previous = filterByMonth(transactions, addMonths(month, -1))
+  const progress = budgetProgress(current, budgets)
+  const expenseTotals = groupByCategory(current.filter((tx) => tx.type === 'expense'))
 
   return (
-    <main className="flex flex-col gap-4 p-4 pb-44">
+    <main className="flex flex-col gap-4 p-4 pb-24">
       <MonthNavigator month={month} onMonthChange={onMonthChange} />
-      <SummaryCards summary={summary} />
+      <SummaryCards summary={summarize(current)} />
       <BudgetAlerts
-        progress={budgetProgress(monthTransactions, budgets)}
+        progress={progress}
         categories={categories}
-        onOpen={onOpenInsights}
-      />
-      <QuickAdd categories={categories} lastCategoryId={lastCategoryId} onAdd={onQuickAdd} />
-      <TransactionList
-        transactions={sortNewestFirst(monthTransactions)}
-        categories={categories}
-        onEdit={onEdit}
-        onDelete={onDelete}
+        onOpen={() => document.getElementById('budgets-title')?.scrollIntoView({ behavior: 'smooth' })}
       />
 
-      <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] bg-gradient-to-t from-app via-app px-4 pt-4 pb-3">
-        <button type="button" onClick={onAdd} className={`${primaryButton} mx-auto block min-h-14 w-full max-w-md shadow-lg`}>
-          {t('addTransaction')}
+      <section aria-labelledby="by-category-title" className={card}>
+        <h2 id="by-category-title" className={sectionTitle}>
+          {t('spendingByCategory')}
+        </h2>
+        <CategoryChart totals={expenseTotals} categories={categories} />
+      </section>
+
+      <section aria-labelledby="budgets-title" className={card}>
+        <h2 id="budgets-title" className={sectionTitle}>
+          {t('budgetsTitle')}
+        </h2>
+        {budgets.length === 0 ? (
+          <p className="mb-3 text-muted">{t('noBudgets')}</p>
+        ) : (
+          <div className="mb-4">
+            <BudgetProgressList progress={progress} categories={categories} />
+          </div>
+        )}
+        <button type="button" onClick={onEditBudgets} className={`${secondaryButton} w-full`}>
+          {t('setBudgets')}
         </button>
-      </div>
+      </section>
+
+      <section aria-labelledby="comparison-title" className={card}>
+        <h2 id="comparison-title" className={sectionTitle}>
+          {t('comparisonTitle')}
+        </h2>
+        <MonthComparison changes={compareExpensesByCategory(current, previous)} categories={categories} />
+      </section>
+
+      <section aria-labelledby="trend-title" className={card}>
+        <h2 id="trend-title" className={sectionTitle}>
+          {t('trendTitle')}
+        </h2>
+        <div className="mb-3">
+          <SegmentedControl
+            label={t('trendRange')}
+            size="sm"
+            value={range}
+            onChange={setRange}
+            options={[
+              { value: '6', label: t('months6') },
+              { value: '12', label: t('months12') },
+            ]}
+          />
+        </div>
+        <TrendChart key={`${month}-${range}`} totals={monthlyTotals(transactions, lastMonths(month, Number(range)))} />
+      </section>
+
+      <section aria-labelledby="month-transactions-title" className="flex flex-col gap-2">
+        <h2 id="month-transactions-title" className="text-lg font-bold">
+          {t('transactionsLabel')}
+        </h2>
+        <TransactionList transactions={sortNewestFirst(current)} categories={categories} onEdit={onEdit} onDelete={onDelete} />
+      </section>
     </main>
   )
 }

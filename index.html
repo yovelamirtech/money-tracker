@@ -16,7 +16,7 @@
       // Apply the saved theme and language before the first paint, so there's no flash.
       // Must match src/lib/storage.ts (key) and src/hooks/useTheme.ts (dark rule).
       try {
-        var settings = (JSON.parse(localStorage.getItem('money-tracker:v1')) || {}).settings || {}
+        var settings = (JSON.parse(localStorage.getItem('money-tracker:v2')) || {}).settings || {}
         var dark =
           settings.theme === 'dark' ||
           (settings.theme !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches)

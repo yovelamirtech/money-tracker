@@ -27,6 +27,7 @@ const backupErrorMessages: Record<BackupError, MessageKey> = {
   'not-an-object': 'errInvalidData',
   'invalid-transactions': 'errInvalidData',
   'invalid-categories': 'errInvalidData',
+  'invalid-note-rules': 'errInvalidData',
   'invalid-recurring': 'errInvalidData',
   'invalid-budgets': 'errInvalidData',
   'duplicate-ids': 'errDuplicateIds',

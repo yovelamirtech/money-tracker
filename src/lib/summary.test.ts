@@ -18,7 +18,7 @@ function makeTransaction(overrides: Partial<Transaction> = {}): Transaction {
     id,
     type: 'expense',
     amountAgorot: 1000,
-    categoryId: 'food',
+    categoryId: 'groceries',
     date: '2026-10-15',
     createdAt: `2026-10-15T10:00:00.000Z`,
     ...overrides,
@@ -114,14 +114,14 @@ describe('groupByCategory', () => {
 
   it('sums per category and sorts biggest first', () => {
     const result = groupByCategory([
-      makeTransaction({ categoryId: 'food', amountAgorot: 3000 }),
-      makeTransaction({ categoryId: 'housing', amountAgorot: 400000 }),
-      makeTransaction({ categoryId: 'food', amountAgorot: 4500 }),
+      makeTransaction({ categoryId: 'groceries', amountAgorot: 3000 }),
+      makeTransaction({ categoryId: 'car', amountAgorot: 400000 }),
+      makeTransaction({ categoryId: 'groceries', amountAgorot: 4500 }),
       makeTransaction({ categoryId: 'transport', amountAgorot: 2000 }),
     ])
     expect(result).toEqual([
-      { categoryId: 'housing', total: 400000 },
-      { categoryId: 'food', total: 7500 },
+      { categoryId: 'car', total: 400000 },
+      { categoryId: 'groceries', total: 7500 },
       { categoryId: 'transport', total: 2000 },
     ])
   })
@@ -186,18 +186,18 @@ describe('monthlyTotals', () => {
 describe('compareExpensesByCategory', () => {
   it('lists the biggest changes first, up or down, and leaves out unchanged categories and income', () => {
     const previous = [
-      makeTransaction({ categoryId: 'food', amountAgorot: 100000 }),
+      makeTransaction({ categoryId: 'groceries', amountAgorot: 100000 }),
       makeTransaction({ categoryId: 'bills', amountAgorot: 30000 }),
       makeTransaction({ categoryId: 'health', amountAgorot: 5000 }),
     ]
     const current = [
-      makeTransaction({ categoryId: 'food', amountAgorot: 60000 }),
+      makeTransaction({ categoryId: 'groceries', amountAgorot: 60000 }),
       makeTransaction({ categoryId: 'bills', amountAgorot: 30000 }),
       makeTransaction({ categoryId: 'shopping', amountAgorot: 20000 }),
       makeTransaction({ type: 'income', categoryId: 'salary', amountAgorot: 900000 }),
     ]
     expect(compareExpensesByCategory(current, previous)).toEqual([
-      { categoryId: 'food', current: 60000, previous: 100000, change: -40000 },
+      { categoryId: 'groceries', current: 60000, previous: 100000, change: -40000 },
       { categoryId: 'shopping', current: 20000, previous: 0, change: 20000 },
       { categoryId: 'health', current: 0, previous: 5000, change: -5000 },
     ])

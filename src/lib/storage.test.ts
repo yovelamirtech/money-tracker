@@ -8,7 +8,7 @@ const sample: Transaction[] = [
     id: 'a',
     type: 'expense',
     amountAgorot: 1250,
-    categoryId: 'food',
+    categoryId: 'groceries',
     date: '2026-10-23',
     note: 'פלאפל',
     createdAt: '2026-10-23T12:00:00.000Z',
@@ -57,21 +57,28 @@ describe('loadData / saveData', () => {
     expect(loadData()).toEqual(createDefaultAppData())
   })
 
+  it('removes the old v1 data, which used the old categories', () => {
+    localStorage.setItem('money-tracker:v1', JSON.stringify({ transactions: sample }))
+    expect(loadData()).toEqual(createDefaultAppData())
+    expect(localStorage.getItem('money-tracker:v1')).toBeNull()
+  })
+
   it('save → load round-trip keeps every part', () => {
     const data: AppData = {
       ...createDefaultAppData(),
       transactions: sample,
-      budgets: [{ categoryId: 'food', limitAgorot: 100000 }],
-      settings: { theme: 'dark', language: 'en', lastCategoryId: { expense: 'food' } },
+      budgets: [{ categoryId: 'groceries', limitAgorot: 100000 }],
+      noteRules: [{ note: 'קפה', categoryId: 'eating-out' }],
+      settings: { theme: 'dark', language: 'en', lastCategoryId: { expense: 'groceries' } },
     }
     saveData(data)
     expect(loadData()).toEqual(data)
   })
 
   it('saveTransactions keeps the other stored parts', () => {
-    saveData({ ...createDefaultAppData(), budgets: [{ categoryId: 'food', limitAgorot: 5 }] })
+    saveData({ ...createDefaultAppData(), budgets: [{ categoryId: 'groceries', limitAgorot: 5 }] })
     saveTransactions(sample)
-    expect(loadData().budgets).toEqual([{ categoryId: 'food', limitAgorot: 5 }])
+    expect(loadData().budgets).toEqual([{ categoryId: 'groceries', limitAgorot: 5 }])
     expect(loadData().transactions).toEqual(sample)
   })
 

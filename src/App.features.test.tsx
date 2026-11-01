@@ -29,10 +29,11 @@ afterEach(() => {
 describe('edit transaction (2.1)', () => {
   it('opens a transaction, changes every field and saves it in place', async () => {
     const user = userEvent.setup()
-    seed({ transactions: [makeTransaction({ id: 'x', amountAgorot: 1250, categoryId: 'food', date: today, note: 'פלאפל' })] })
+    seed({ transactions: [makeTransaction({ id: 'x', amountAgorot: 1250, categoryId: 'groceries', date: today, note: 'פלאפל' })] })
     render(<App />)
+    await user.click(screen.getByRole('button', { name: 'חודש' }))
 
-    await user.click(screen.getByRole('button', { name: /^עריכת\s*אוכל/ }))
+    await user.click(screen.getByRole('button', { name: /^עריכת\s*סופר/ }))
     expect(screen.getByRole('heading', { name: 'עריכת תנועה' })).toBeInTheDocument()
     expect(screen.getByLabelText('סכום (₪)')).toHaveValue('12.50')
     expect(screen.getByLabelText('הערה (לא חובה)')).toHaveValue('פלאפל')
@@ -55,8 +56,9 @@ describe('edit transaction (2.1)', () => {
     const user = userEvent.setup()
     seed({ transactions: [makeTransaction({ id: 'x', date: today })] })
     render(<App />)
+    await user.click(screen.getByRole('button', { name: 'חודש' }))
 
-    await user.click(screen.getByRole('button', { name: /^עריכת\s*אוכל/ }))
+    await user.click(screen.getByRole('button', { name: /^עריכת\s*סופר/ }))
     await user.clear(screen.getByLabelText('סכום (₪)'))
     await user.type(screen.getByLabelText('סכום (₪)'), '1.234')
     await user.click(screen.getByRole('button', { name: 'שמירה' }))
@@ -66,34 +68,61 @@ describe('edit transaction (2.1)', () => {
   })
 })
 
-describe('quick add (2.5)', () => {
-  it('adds an expense dated today and remembers the category for next time', async () => {
+describe('sort screen', () => {
+  const entry = (id: string, note: string | undefined, createdAt: string) =>
+    makeTransaction({ id, categoryId: 'uncategorized', date: today, createdAt, ...(note && { note }) })
+
+  it('goes through the uncategorized entries oldest first; same note sorts together; undo; income', async () => {
     const user = userEvent.setup()
-    const { unmount } = render(<App />)
-
-    await user.selectOptions(screen.getByLabelText('קטגוריה להוספה מהירה'), 'bills')
-    await user.type(screen.getByLabelText('סכום להוספה מהירה'), '250')
-    await user.click(screen.getByRole('button', { name: 'הוספה' }))
-
-    expect(screen.getByRole('status')).toHaveTextContent('נוסף: חשבונות ₪250.00')
-    expect(screen.getByLabelText('סכום להוספה מהירה')).toHaveValue('')
-    expect(loadData().transactions[0]).toMatchObject({ type: 'expense', amountAgorot: 25000, categoryId: 'bills', date: today })
-    expect(summaryValue('הוצאות').getByText('₪250.00')).toBeInTheDocument()
-
-    unmount()
+    seed({
+      transactions: [
+        entry('a', 'קפה', '2026-10-01T08:00:00Z'),
+        entry('b', 'החזר מס', '2026-10-02T08:00:00Z'),
+        entry('c', 'קפה', '2026-10-03T08:00:00Z'),
+      ],
+    })
     render(<App />)
-    expect(screen.getByLabelText('קטגוריה להוספה מהירה')).toHaveValue('bills')
-    await user.click(screen.getByRole('button', { name: '+ הוספת תנועה' }))
-    expect(screen.getByLabelText('קטגוריה')).toHaveValue('bills')
+    await user.click(screen.getByRole('button', { name: 'מיון 3 ללא קטגוריה' }))
+    expect(screen.getByText('נשארו 3')).toBeInTheDocument()
+    expect(screen.getByText('קפה')).toBeInTheDocument()
+
+    // Both "קפה" entries are sorted with one tap
+    await user.click(screen.getByRole('button', { name: 'אוכל בחוץ' }))
+    expect(screen.getByRole('status')).toHaveTextContent('"קפה" ← אוכל בחוץ (ועוד 1 עם אותו שם)')
+    expect(screen.getByText('נשארו 1')).toBeInTheDocument()
+    expect(loadData().transactions.map((t) => t.categoryId)).toEqual(['eating-out', 'uncategorized', 'eating-out'])
+
+    // Undo brings them back, and forgets the rule
+    await user.click(screen.getByRole('button', { name: 'ביטול' }))
+    expect(loadData().transactions.map((t) => t.categoryId)).toEqual(['uncategorized', 'uncategorized', 'uncategorized'])
+    expect(loadData().noteRules).toEqual([])
+    expect(screen.getByText('נשארו 3')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'אוכל בחוץ' }))
+
+    // An income category turns it into income
+    expect(screen.getByText('החזר מס')).toBeInTheDocument()
+    const income = screen.getByRole('region', { name: 'זו הכנסה' })
+    await user.click(within(income).getByRole('button', { name: 'אחר' }))
+    expect(loadData().transactions[1]).toMatchObject({ type: 'income', categoryId: 'other-income' })
+    expect(screen.getByText('הכול ממוין')).toBeInTheDocument()
   })
 
-  it('rejects an invalid amount', async () => {
+  it('skips an entry and can go over the skipped ones again', async () => {
     const user = userEvent.setup()
+    seed({ transactions: [entry('a', undefined, '2026-10-01T08:00:00Z'), entry('b', 'דלק', '2026-10-02T08:00:00Z')] })
     render(<App />)
-    await user.type(screen.getByLabelText('סכום להוספה מהירה'), '0')
-    await user.click(screen.getByRole('button', { name: 'הוספה' }))
-    expect(screen.getByRole('alert')).toBeInTheDocument()
-    expect(loadData().transactions).toEqual([])
+    await user.click(screen.getByRole('button', { name: 'מיון 2 ללא קטגוריה' }))
+
+    expect(screen.getByText('בלי תיאור')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'דלג' }))
+    await user.click(screen.getByRole('button', { name: 'רכב' }))
+    expect(screen.getByText('סיימת. נשארו 1 שדילגת עליהן.')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'לעבור שוב על מה שדילגתי' }))
+    expect(screen.getByText('בלי תיאור')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'חזרה' }))
+    expect(screen.getByRole('button', { name: 'מיון 1 ללא קטגוריה' })).toBeInTheDocument()
   })
 })
 
@@ -104,7 +133,8 @@ describe('recurring transactions (2.4)', () => {
 
     const { unmount } = render(<App />)
     expect(loadData().transactions.map((t) => toMonthKey(t.date))).toEqual([addMonths(thisMonth, -1), thisMonth])
-    expect(screen.getByRole('img', { name: 'חוזר כל חודש' })).toBeInTheDocument()
+    // The latest entries list shows both generated months
+    expect(screen.getAllByRole('img', { name: 'חוזר כל חודש' })).toHaveLength(2)
 
     unmount()
     render(<App />)
@@ -116,9 +146,9 @@ describe('recurring transactions (2.4)', () => {
     vi.spyOn(window, 'confirm').mockReturnValue(true)
     render(<App />)
 
-    await user.click(screen.getByRole('button', { name: '+ הוספת תנועה' }))
+    await user.click(screen.getByRole('button', { name: /הוספה מפורטת/ }))
     await user.type(screen.getByLabelText('סכום (₪)'), '49.90')
-    await user.selectOptions(screen.getByLabelText('קטגוריה'), 'מנויים')
+    await user.selectOptions(screen.getByLabelText('קטגוריה'), 'בריאות')
     await user.click(screen.getByLabelText(/חוזר כל חודש/))
     await user.click(screen.getByRole('button', { name: 'שמירה' }))
 
@@ -131,13 +161,13 @@ describe('recurring transactions (2.4)', () => {
     await user.click(screen.getByRole('button', { name: /תנועות קבועות/ }))
     expect(screen.getByText(`בכל ${Number(today.slice(8))} בחודש`)).toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: 'השהיה של מנויים' }))
+    await user.click(screen.getByRole('button', { name: 'השהיה של בריאות' }))
     expect(loadData().recurring[0].active).toBe(false)
     expect(screen.getByText(/מושהה/)).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'חידוש של מנויים' }))
+    await user.click(screen.getByRole('button', { name: 'חידוש של בריאות' }))
     expect(loadData().recurring[0].active).toBe(true)
 
-    await user.click(screen.getByRole('button', { name: 'מחיקת התנועה הקבועה מנויים' }))
+    await user.click(screen.getByRole('button', { name: 'מחיקת התנועה הקבועה בריאות' }))
     expect(loadData().recurring).toEqual([])
     expect(loadData().transactions).toHaveLength(1)
     expect(screen.getByText(/אין תנועות קבועות/)).toBeInTheDocument()
@@ -162,7 +192,7 @@ describe('manage categories (2.2)', () => {
     expect(pets).toMatchObject({ type: 'expense', icon: '🐶', color: 'green' })
 
     // Duplicate names are rejected
-    await user.type(screen.getByLabelText('שם'), 'אוכל')
+    await user.type(screen.getByLabelText('שם'), 'סופר')
     await user.click(screen.getByRole('button', { name: 'הוספת קטגוריה' }))
     expect(screen.getByRole('alert')).toHaveTextContent('כבר יש קטגוריה בשם הזה')
     await user.clear(screen.getByLabelText('שם'))
@@ -203,7 +233,7 @@ describe('budgets (3.3)', () => {
     const user = userEvent.setup()
     seed({
       transactions: [
-        makeTransaction({ categoryId: 'food', amountAgorot: 90000, date: today }),
+        makeTransaction({ categoryId: 'groceries', amountAgorot: 90000, date: today }),
         makeTransaction({ categoryId: 'bills', amountAgorot: 70000, date: today }),
       ],
     })
@@ -211,7 +241,7 @@ describe('budgets (3.3)', () => {
 
     await user.click(screen.getByRole('button', { name: 'הגדרות' }))
     await user.click(screen.getByRole('button', { name: /תקציבים/ }))
-    await user.type(screen.getByLabelText('תקציב לאוכל (₪)'), '1,000')
+    await user.type(screen.getByLabelText('תקציב לסופר (₪)'), '1,000')
     await user.type(screen.getByLabelText('תקציב לחשבונות (₪)'), '500')
     await user.type(screen.getByLabelText('תקציב לבריאות (₪)'), 'abc')
     await user.click(screen.getByRole('button', { name: 'שמירה' }))
@@ -222,42 +252,42 @@ describe('budgets (3.3)', () => {
     await user.click(screen.getByRole('button', { name: 'שמירה' }))
     expect(screen.getByRole('status')).toHaveTextContent('התקציבים נשמרו')
     expect(loadData().budgets).toEqual([
-      { categoryId: 'food', limitAgorot: 100000 },
       { categoryId: 'bills', limitAgorot: 50000 },
+      { categoryId: 'groceries', limitAgorot: 100000 },
     ])
 
     await user.click(screen.getByRole('button', { name: 'חודש' }))
     expect(screen.getByText('חריגה מהתקציב: חשבונות')).toBeInTheDocument()
-    expect(screen.getByText('קרוב לגבול התקציב: אוכל')).toBeInTheDocument()
+    expect(screen.getByText('קרוב לגבול התקציב: סופר')).toBeInTheDocument()
   })
 })
 
-describe('insights (3.1–3.5)', () => {
+describe('month screen: summary and insights (3.1–3.5)', () => {
   it('shows savings rate, spending by category, budgets, changes from last month and the trend', async () => {
     const user = userEvent.setup()
     const lastMonth = `${addMonths(thisMonth, -1)}-10`
     seed({
       transactions: [
         makeTransaction({ type: 'income', categoryId: 'salary', amountAgorot: 1000000, date: today }),
-        makeTransaction({ categoryId: 'housing', amountAgorot: 450000, date: today }),
-        makeTransaction({ categoryId: 'food', amountAgorot: 150000, date: today }),
-        makeTransaction({ categoryId: 'food', amountAgorot: 100000, date: lastMonth }),
+        makeTransaction({ categoryId: 'car', amountAgorot: 450000, date: today }),
+        makeTransaction({ categoryId: 'groceries', amountAgorot: 150000, date: today }),
+        makeTransaction({ categoryId: 'groceries', amountAgorot: 100000, date: lastMonth }),
       ],
-      budgets: [{ categoryId: 'food', limitAgorot: 100000 }],
+      budgets: [{ categoryId: 'groceries', limitAgorot: 100000 }],
     })
     render(<App />)
-    await user.click(screen.getByRole('button', { name: 'תובנות' }))
+    await user.click(screen.getByRole('button', { name: 'חודש' }))
 
-    expect(screen.getByRole('heading', { name: 'שיעור חיסכון' }).parentElement).toHaveTextContent('40%')
+    expect(summaryValue('שיעור חיסכון').getByText('40%')).toBeInTheDocument()
 
     const bars = within(screen.getByRole('list', { name: 'הוצאות לפי קטגוריה' })).getAllByRole('listitem')
     expect(bars.map((li) => li.textContent)).toEqual([
-      expect.stringContaining('דיור'),
-      expect.stringContaining('אוכל'),
+      expect.stringContaining('רכב'),
+      expect.stringContaining('סופר'),
     ])
     expect(bars[0]).toHaveTextContent('₪4,500.00 · 75%')
 
-    expect(screen.getByRole('progressbar', { name: 'אוכל' })).toHaveAttribute('aria-valuetext', '150%')
+    expect(screen.getByRole('progressbar', { name: 'סופר' })).toHaveAttribute('aria-valuetext', '150%')
     expect(screen.getByText('חריגה של ₪500.00')).toBeInTheDocument()
 
     expect(screen.getByText('עלייה של ₪4,500.00')).toBeInTheDocument()
@@ -272,7 +302,8 @@ describe('insights (3.1–3.5)', () => {
   it('shows empty states for a month without data', async () => {
     const user = userEvent.setup()
     render(<App />)
-    await user.click(screen.getByRole('button', { name: 'תובנות' }))
+    await user.click(screen.getByRole('button', { name: 'חודש' }))
+    expect(screen.getByText('אין תנועות בחודש הזה')).toBeInTheDocument()
     expect(screen.getByText('אין הוצאות בחודש הזה')).toBeInTheDocument()
     expect(screen.getByText('עוד לא הוגדרו תקציבים.')).toBeInTheDocument()
     expect(screen.getByText('אין שינוי בהוצאות לעומת החודש הקודם.')).toBeInTheDocument()
@@ -285,8 +316,8 @@ describe('search and filter (2.3)', () => {
     const user = userEvent.setup()
     seed({
       transactions: [
-        makeTransaction({ id: 'a', categoryId: 'food', amountAgorot: 1500, note: 'קפה', date: '2025-01-05' }),
-        makeTransaction({ id: 'b', categoryId: 'food', amountAgorot: 40000, note: 'סופר', date: '2026-03-01' }),
+        makeTransaction({ id: 'a', categoryId: 'groceries', amountAgorot: 1500, note: 'קפה', date: '2025-01-05' }),
+        makeTransaction({ id: 'b', categoryId: 'groceries', amountAgorot: 40000, note: 'סופר', date: '2026-03-01' }),
         makeTransaction({ id: 'c', type: 'income', categoryId: 'salary', amountAgorot: 900000, date: '2026-03-01' }),
       ],
     })
@@ -305,10 +336,10 @@ describe('search and filter (2.3)', () => {
     expect(screen.getByText('1 תוצאות')).toBeInTheDocument()
     await user.selectOptions(screen.getByLabelText('סוג'), 'all')
 
-    await user.selectOptions(screen.getByLabelText('קטגוריה'), 'food')
+    await user.selectOptions(screen.getByLabelText('קטגוריה'), 'groceries')
     await user.type(screen.getByLabelText('מסכום (₪)'), '100')
     expect(screen.getByText('1 תוצאות')).toBeInTheDocument()
-    expect(screen.getByText(/סופר/)).toBeInTheDocument()
+    expect(within(results() as HTMLElement).getByText(/· סופר/)).toBeInTheDocument()
 
     await user.type(screen.getByLabelText('עד סכום (₪)'), 'x')
     expect(screen.getByText('סכום לא תקין')).toBeInTheDocument()
@@ -323,10 +354,10 @@ describe('search and filter (2.3)', () => {
 
   it('edits a result and comes back to search', async () => {
     const user = userEvent.setup()
-    seed({ transactions: [makeTransaction({ categoryId: 'food', note: 'קפה', date: '2025-01-05' })] })
+    seed({ transactions: [makeTransaction({ categoryId: 'groceries', note: 'קפה', date: '2025-01-05' })] })
     render(<App />)
     await user.click(screen.getByRole('button', { name: 'חיפוש' }))
-    await user.click(screen.getByRole('button', { name: /^עריכת\s*אוכל/ }))
+    await user.click(screen.getByRole('button', { name: /^עריכת\s*סופר/ }))
     await user.click(screen.getByRole('button', { name: 'ביטול' }))
     expect(screen.getByRole('heading', { name: 'חיפוש וסינון' })).toBeInTheDocument()
   })
@@ -355,7 +386,7 @@ describe('appearance and language (4.4, 4.8)', () => {
 
   it('switches to English with left-to-right layout and translated categories', async () => {
     const user = userEvent.setup()
-    seed({ transactions: [makeTransaction({ categoryId: 'food', date: today })] })
+    seed({ transactions: [makeTransaction({ categoryId: 'groceries', date: today })] })
     render(<App />)
     await user.click(screen.getByRole('button', { name: 'הגדרות' }))
     await user.click(screen.getByRole('button', { name: 'English' }))
@@ -365,7 +396,7 @@ describe('appearance and language (4.4, 4.8)', () => {
     expect(screen.getByRole('heading', { name: 'Settings' })).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Month' }))
-    expect(within(screen.getByRole('list', { name: 'Transactions' })).getByText('Food')).toBeInTheDocument()
+    expect(within(screen.getByRole('list', { name: 'Transactions' })).getByText('Groceries')).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Settings' }))
     await user.click(screen.getByRole('button', { name: 'עברית' }))

@@ -27,7 +27,7 @@ describe('TransactionFormScreen', () => {
 
   it('shows only the categories of the selected type', async () => {
     const { user } = renderForm()
-    expect(categoryOptions()).toContain('אוכל')
+    expect(categoryOptions()).toContain('סופר')
     expect(categoryOptions()).not.toContain('משכורת')
 
     await user.click(screen.getByRole('button', { name: 'הכנסה' }))
