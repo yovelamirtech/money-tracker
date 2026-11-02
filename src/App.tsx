@@ -45,26 +45,67 @@ function rememberCategory(data: AppData, type: TransactionType, categoryId: stri
   }
 }
 
+/** Fields that bring up the on-screen keyboard when focused (not checkboxes, buttons, pickers...). */
+function opensKeyboard(element: Element | null): boolean {
+  if (element instanceof HTMLTextAreaElement) return true
+  if (!(element instanceof HTMLInputElement)) return false
+  return ['text', 'search', 'number', 'email', 'tel', 'url', 'password'].includes(element.type)
+}
+
+/** How much the visible height must drop to count as an on-screen keyboard (more than a toolbar hiding). */
+const KEYBOARD_MIN_HEIGHT = 120
+
 /**
- * Keeps the entry bar on top of the on-screen keyboard: the keyboard covers part of the page without
- * resizing it (iOS, and Android Chrome by default), so the covered height is exposed as --kb, and
- * `kb-open` is set on <html> while it's open (the tab bar hides then).
+ * Keeps the entry bar right on top of the on-screen keyboard, and hides the tab bar while typing.
+ *
+ * - `kb-open` is set on <html> while a text field is focused on a touch screen and the visible area is
+ *   clearly shorter than its full height. Comparing with the full height seen so far (not with
+ *   window.innerHeight) works whether the browser shrinks the page for the keyboard or covers it;
+ *   iOS does both, depending on the version and on whether the app is installed.
+ * - `--vv-bottom` is where the visible area ends, measured from the top of the page's fixed-position frame.
+ *   The entry bar hangs from it, so it sits on the keyboard without relying on window.innerHeight,
+ *   which on iOS doesn't always match that frame (that left the bar floating above the keyboard).
  */
 function useKeyboardInset() {
   useEffect(() => {
+    const html = document.documentElement
     const viewport = window.visualViewport
-    if (!viewport) return
+    const touch = window.matchMedia?.('(pointer: coarse)').matches ?? false
+    const visibleHeight = () => viewport?.height ?? window.innerHeight
+    // The full visible height, per screen width (turning the phone starts over).
+    let full = { width: window.innerWidth, height: visibleHeight() }
+
     const update = () => {
-      const covered = Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop)
-      document.documentElement.style.setProperty('--kb', `${covered}px`)
-      document.documentElement.classList.toggle('kb-open', covered > 80)
+      const height = visibleHeight()
+      if (window.innerWidth !== full.width) full = { width: window.innerWidth, height }
+      else full.height = Math.max(full.height, height)
+
+      const keyboardUp = full.height - height > KEYBOARD_MIN_HEIGHT
+      html.style.setProperty('--vv-bottom', `${(viewport?.offsetTop ?? 0) + height}px`)
+      html.classList.toggle('kb-open', touch && keyboardUp && opensKeyboard(document.activeElement))
     }
-    viewport.addEventListener('resize', update)
-    viewport.addEventListener('scroll', update)
+    // Focus moves before the keyboard finishes opening or closing; measure again on the next frame too.
+    let frame = 0
+    const updateSoon = () => {
+      update()
+      cancelAnimationFrame(frame)
+      frame = requestAnimationFrame(update)
+    }
+
+    viewport?.addEventListener('resize', update)
+    viewport?.addEventListener('scroll', update)
+    window.addEventListener('resize', update)
+    document.addEventListener('focusin', updateSoon)
+    document.addEventListener('focusout', updateSoon)
     update()
     return () => {
-      viewport.removeEventListener('resize', update)
-      viewport.removeEventListener('scroll', update)
+      viewport?.removeEventListener('resize', update)
+      viewport?.removeEventListener('scroll', update)
+      window.removeEventListener('resize', update)
+      document.removeEventListener('focusin', updateSoon)
+      document.removeEventListener('focusout', updateSoon)
+      cancelAnimationFrame(frame)
+      html.classList.remove('kb-open')
     }
   }, [])
 }

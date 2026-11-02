@@ -117,11 +117,14 @@ export default function EntryScreen({
       {/* The scroll margin keeps the newest entry above the entry bar and the tab bar, not behind them. */}
       <div ref={listEnd} className="scroll-mb-[calc(4rem+env(safe-area-inset-bottom)+7rem)]" />
 
-      {/* The entry bar: above the tab bar, or right on the keyboard while it's open (see useKeyboardInset). */}
+      {/*
+        The entry bar: above the tab bar, or hanging from the bottom of the visible area while typing,
+        so it sits right on the keyboard (see useKeyboardInset in App).
+      */}
       <form
         onSubmit={handleSubmit}
         noValidate
-        className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-20 border-t border-line bg-app/95 px-4 pt-2 pb-3 backdrop-blur [.kb-open_&]:bottom-[var(--kb,0px)]"
+        className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-20 border-t border-line bg-app/95 px-4 pt-2 pb-3 backdrop-blur [.kb-open_&]:top-[var(--vv-bottom,100dvh)] [.kb-open_&]:bottom-auto [.kb-open_&]:-translate-y-full"
       >
         <div className="mx-auto flex max-w-md flex-col gap-1">
           <div className="min-h-5 truncate px-1 text-sm">
