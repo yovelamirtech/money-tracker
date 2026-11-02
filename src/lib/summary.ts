@@ -44,15 +44,6 @@ export function sortNewestFirst(transactions: Transaction[]): Transaction[] {
   )
 }
 
-/**
- * Share of income that was saved, as a whole percent rounded toward zero: 10,000 in and 7,500 out → 25.
- * Negative when spending was more than income. null when there was no income.
- */
-export function savingsRate(summary: MonthSummary): number | null {
-  if (summary.income <= 0) return null
-  return Math.trunc((summary.balance * 100) / summary.income)
-}
-
 export interface MonthTotals extends MonthSummary {
   month: MonthKey
 }

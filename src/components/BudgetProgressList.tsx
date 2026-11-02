@@ -9,11 +9,11 @@ interface BudgetProgressListProps {
   categories: Category[]
 }
 
-// Status always comes as icon + label, never color alone.
+// Status always comes as icon + label, never color alone. Calm amber shades, never red.
 const levels: Record<BudgetLevel, { icon: string; label: MessageKey; fill: string; text: string }> = {
   ok: { icon: '✓', label: 'levelOk', fill: 'bg-chart-bar', text: 'text-muted' },
-  near: { icon: '⚠️', label: 'levelNear', fill: 'bg-status-warning', text: 'text-warn' },
-  over: { icon: '⛔', label: 'levelOver', fill: 'bg-status-critical', text: 'text-expense' },
+  near: { icon: '⏳', label: 'levelNear', fill: 'bg-status-near', text: 'text-warn' },
+  over: { icon: '⚠️', label: 'levelOver', fill: 'bg-status-over', text: 'text-warn' },
 }
 
 export default function BudgetProgressList({ progress, categories }: BudgetProgressListProps) {

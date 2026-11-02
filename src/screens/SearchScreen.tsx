@@ -145,10 +145,10 @@ function AmountBound({ id, label, value, invalid, onChange }: AmountBoundProps) 
         onChange={(e) => onChange(e.target.value)}
         aria-invalid={invalid}
         aria-describedby={invalid ? `${id}-error` : undefined}
-        className={`${fieldClass} text-end ${invalid ? 'border-expense' : ''}`}
+        className={`${fieldClass} text-end ${invalid ? 'border-warn' : ''}`}
       />
       {invalid && (
-        <span id={`${id}-error`} className="text-sm text-expense">
+        <span id={`${id}-error`} className="text-sm text-warn">
           {t('invalidAmount')}
         </span>
       )}

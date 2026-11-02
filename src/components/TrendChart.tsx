@@ -14,10 +14,9 @@ const HEIGHT = 180
 const AXIS_WIDTH = 44 // room for the y labels
 const TOP = 8
 const BOTTOM = 22 // room for the month labels
-const BAR_GAP = 2
 
 /**
- * Income vs expenses per month as paired columns. Time runs left to right in both languages.
+ * Spending per month as columns. Time runs left to right in both languages.
  * Tapping or focusing a month shows its numbers in the readout above the chart.
  */
 export default function TrendChart({ totals }: TrendChartProps) {
@@ -25,27 +24,21 @@ export default function TrendChart({ totals }: TrendChartProps) {
   const [selected, setSelected] = useState(totals.length - 1)
   const active = totals[Math.min(selected, totals.length - 1)]
 
-  const max = Math.max(0, ...totals.flatMap((m) => [m.income, m.expense]))
+  const max = Math.max(0, ...totals.map((m) => m.expense))
   const ticks = niceTicks(max)
   const top = ticks[ticks.length - 1] || 1
   const plotHeight = HEIGHT - TOP - BOTTOM
   const slot = (WIDTH - AXIS_WIDTH) / totals.length
-  const barWidth = Math.min(24, (slot - 6 - BAR_GAP) / 2)
+  const barWidth = Math.min(28, slot - 8)
   const y = (value: number) => TOP + plotHeight - (value / top) * plotHeight
 
   return (
     <div>
-      <div className="mb-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
-        <LegendItem colorClass="bg-chart-income" label={t('income')} />
-        <LegendItem colorClass="bg-chart-expense" label={t('expenses')} />
-      </div>
-
       <p aria-live="polite" className="mb-1 min-h-10 text-sm">
         <span className="font-semibold">{formatMonthLabel(active.month, locale)}</span>
         <br />
         <span className="text-muted">
-          {t('income')} <span dir="ltr">{formatILS(active.income)}</span> · {t('expenses')}{' '}
-          <span dir="ltr">{formatILS(active.expense)}</span>
+          {t('expenses')} <span dir="ltr">{formatILS(active.expense)}</span>
         </span>
       </p>
 
@@ -74,8 +67,7 @@ export default function TrendChart({ totals }: TrendChartProps) {
               {isActive && (
                 <rect x={center - slot / 2 + 1} y={TOP} width={slot - 2} height={plotHeight} rx={4} className="fill-subtle" />
               )}
-              <Column x={center - BAR_GAP / 2 - barWidth} width={barWidth} top={y(m.income)} bottom={y(0)} className="fill-chart-income" />
-              <Column x={center + BAR_GAP / 2} width={barWidth} top={y(m.expense)} bottom={y(0)} className="fill-chart-expense" />
+              <Column x={center - barWidth / 2} width={barWidth} top={y(m.expense)} bottom={y(0)} className="fill-chart-bar" />
               <text x={center} y={HEIGHT - 6} textAnchor="middle" className={`text-[10px] ${isActive ? 'fill-fg font-bold' : 'fill-muted'}`}>
                 {formatShortMonth(m.month, locale)}
               </text>
@@ -100,33 +92,20 @@ export default function TrendChart({ totals }: TrendChartProps) {
           <thead className="text-muted">
             <tr>
               <th className="py-1 text-start font-medium">{t('month')}</th>
-              <th className="py-1 text-end font-medium">{t('income')}</th>
               <th className="py-1 text-end font-medium">{t('expenses')}</th>
-              <th className="py-1 text-end font-medium">{t('balance')}</th>
             </tr>
           </thead>
           <tbody className="tabular-nums">
             {totals.map((m) => (
               <tr key={m.month} className="border-t border-line">
                 <td className="py-1">{formatMonthLabel(m.month, locale)}</td>
-                <td dir="ltr" className="py-1 text-start rtl:text-end">{formatILS(m.income)}</td>
                 <td dir="ltr" className="py-1 text-start rtl:text-end">{formatILS(m.expense)}</td>
-                <td dir="ltr" className="py-1 text-start rtl:text-end">{formatILS(m.balance)}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </details>
     </div>
-  )
-}
-
-function LegendItem({ colorClass, label }: { colorClass: string; label: string }) {
-  return (
-    <span className="flex items-center gap-1.5">
-      <span aria-hidden="true" className={`inline-block size-3 rounded-sm ${colorClass}`} />
-      {label}
-    </span>
   )
 }
 

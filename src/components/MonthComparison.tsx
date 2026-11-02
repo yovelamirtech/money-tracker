@@ -32,8 +32,8 @@ export default function MonthComparison({ changes, categories, limit = 5 }: Mont
                 {t('beforeNow', { previous: formatILS(c.previous), current: formatILS(c.current) })}
               </div>
             </div>
-            {/* More spending is bad (expense color), less is good (income color); the arrow and words carry it too */}
-            <div className={`text-end text-sm font-semibold ${up ? 'text-expense' : 'text-income'}`}>
+            {/* Less spending is shown in green; more stays neutral (never red). The arrow and words carry it too */}
+            <div className={`text-end text-sm font-semibold ${up ? 'text-fg' : 'text-income'}`}>
               <span aria-hidden="true">{up ? '▲ ' : '▼ '}</span>
               {t(up ? 'changeUp' : 'changeDown', { amount: formatILS(Math.abs(c.change)) })}
             </div>

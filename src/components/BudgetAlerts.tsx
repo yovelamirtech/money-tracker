@@ -29,13 +29,13 @@ export default function BudgetAlerts({ progress, categories, onOpen }: BudgetAle
     >
       {over && (
         <span className="font-semibold">
-          <span aria-hidden="true">⛔ </span>
+          <span aria-hidden="true">⚠️ </span>
           {t('budgetOverWarning', { names: over })}
         </span>
       )}
       {near && (
         <span>
-          <span aria-hidden="true">⚠️ </span>
+          <span aria-hidden="true">⏳ </span>
           {t('budgetNearWarning', { names: near })}
         </span>
       )}

@@ -39,7 +39,7 @@ test('type → send → sort → edit → delete; totals follow; data survives a
   await expect(recent).toContainText('שכ״ד')
   await nav.getByRole('button', { name: 'חודש' }).click()
   await expect(summary(page, 'הוצאות')).toContainText('₪4,000.00')
-  await expect(summary(page, 'יתרה')).toContainText('₪6,000.00')
+  await expect(summary(page, 'נשאר')).toContainText('₪6,000.00')
 
   // Fix the latest entry from the entry screen
   await nav.getByRole('button', { name: 'הזנה' }).click()
@@ -53,7 +53,7 @@ test('type → send → sort → edit → delete; totals follow; data survives a
   await expect(recent).not.toContainText('שכ״ד')
   await nav.getByRole('button', { name: 'חודש' }).click()
   await expect(summary(page, 'הוצאות')).toContainText('₪0.00')
-  await expect(summary(page, 'יתרה')).toContainText('₪10,000.00')
+  await expect(summary(page, 'נשאר')).toContainText('₪10,000.00')
 })
 
 test('an entry without an amount shows an error and saves nothing', async ({ page }) => {

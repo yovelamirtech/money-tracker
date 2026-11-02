@@ -39,8 +39,8 @@ export default function RecurringScreen({ rules, categories, onToggle, onDelete,
                       {!rule.active && ` · ${t('paused')}`}
                     </div>
                   </div>
-                  <span dir="ltr" className={`font-semibold ${isIncome ? 'text-income' : 'text-expense'}`}>
-                    {isIncome ? '+' : '-'}
+                  <span dir="ltr" className={`font-semibold ${isIncome ? 'text-income' : 'text-fg'}`}>
+                    {isIncome && '+'}
                     {formatILS(rule.amountAgorot)}
                   </span>
                 </div>
@@ -59,7 +59,7 @@ export default function RecurringScreen({ rules, categories, onToggle, onDelete,
                     onClick={() => {
                       if (window.confirm(t('confirmDeleteRule', { name }))) onDelete(rule.id)
                     }}
-                    className={`${iconButton} hover:bg-danger-soft hover:text-expense`}
+                    className={`${iconButton}`}
                   >
                     ✕
                   </button>

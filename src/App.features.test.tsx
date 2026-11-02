@@ -100,9 +100,10 @@ describe('sort screen', () => {
 
     await user.click(screen.getByRole('button', { name: 'אוכל בחוץ' }))
 
-    // An income category turns it into income
+    // An income category turns it into income (they're folded away until asked for)
     expect(screen.getByText('החזר מס')).toBeInTheDocument()
-    const income = screen.getByRole('region', { name: 'זו הכנסה' })
+    await user.click(screen.getByText('זו בעצם הכנסה?'))
+    const income = screen.getByRole('region', { name: 'זו בעצם הכנסה?' })
     await user.click(within(income).getByRole('button', { name: 'אחר' }))
     expect(loadData().transactions[1]).toMatchObject({ type: 'income', categoryId: 'other-income' })
     expect(screen.getByText('הכול ממוין')).toBeInTheDocument()
@@ -263,7 +264,7 @@ describe('budgets (3.3)', () => {
 })
 
 describe('month screen: summary and insights (3.1–3.5)', () => {
-  it('shows savings rate, spending by category, budgets, changes from last month and the trend', async () => {
+  it('shows spending, income only when entered, by category, budgets, changes from last month and the trend', async () => {
     const user = userEvent.setup()
     const lastMonth = `${addMonths(thisMonth, -1)}-10`
     seed({
@@ -278,7 +279,9 @@ describe('month screen: summary and insights (3.1–3.5)', () => {
     render(<App />)
     await user.click(screen.getByRole('button', { name: 'חודש' }))
 
-    expect(summaryValue('שיעור חיסכון').getByText('40%')).toBeInTheDocument()
+    expect(summaryValue('הוצאות').getByText('₪6,000.00')).toBeInTheDocument()
+    expect(summaryValue('הכנסות').getByText('₪10,000.00')).toBeInTheDocument()
+    expect(summaryValue('נשאר').getByText('₪4,000.00')).toBeInTheDocument()
 
     const bars = within(screen.getByRole('list', { name: 'הוצאות לפי קטגוריה' })).getAllByRole('listitem')
     expect(bars.map((li) => li.textContent)).toEqual([
@@ -293,7 +296,7 @@ describe('month screen: summary and insights (3.1–3.5)', () => {
     expect(screen.getByText('עלייה של ₪4,500.00')).toBeInTheDocument()
     expect(screen.getByText('עלייה של ₪500.00')).toBeInTheDocument()
 
-    expect(screen.getByRole('img', { name: 'הכנסות מול הוצאות' })).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: 'הוצאות לאורך זמן' })).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: '12 חודשים' }))
     const trendRows = screen.getAllByRole('table')[1].querySelectorAll('tbody tr')
     expect(trendRows).toHaveLength(12)
@@ -307,7 +310,10 @@ describe('month screen: summary and insights (3.1–3.5)', () => {
     expect(screen.getByText('אין הוצאות בחודש הזה')).toBeInTheDocument()
     expect(screen.getByText('עוד לא הוגדרו תקציבים.')).toBeInTheDocument()
     expect(screen.getByText('אין שינוי בהוצאות לעומת החודש הקודם.')).toBeInTheDocument()
-    expect(screen.getAllByText('אין הכנסות החודש').length).toBeGreaterThan(0)
+    // No income entered: only spending is shown
+    expect(summaryValue('הוצאות').getByText('₪0.00')).toBeInTheDocument()
+    expect(screen.queryByRole('group', { name: 'הכנסות' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('group', { name: 'נשאר' })).not.toBeInTheDocument()
   })
 })
 
