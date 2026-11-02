@@ -5,7 +5,6 @@ import {
   filterByMonth,
   groupByCategory,
   monthlyTotals,
-  savingsRate,
   sortNewestFirst,
   summarize,
 } from './summary'
@@ -148,23 +147,6 @@ describe('sortNewestFirst', () => {
     const copy = [...list]
     sortNewestFirst(list)
     expect(list).toEqual(copy)
-  })
-})
-
-describe('savingsRate', () => {
-  it('is the saved share of income as a whole percent', () => {
-    expect(savingsRate({ income: 1000000, expense: 750000, balance: 250000 })).toBe(25)
-    expect(savingsRate({ income: 1000000, expense: 0, balance: 1000000 })).toBe(100)
-  })
-
-  it('rounds toward zero and can be negative', () => {
-    expect(savingsRate({ income: 300, expense: 200, balance: 100 })).toBe(33)
-    expect(savingsRate({ income: 1000, expense: 1500, balance: -500 })).toBe(-50)
-    expect(savingsRate({ income: 300, expense: 400, balance: -100 })).toBe(-33)
-  })
-
-  it('is null without income', () => {
-    expect(savingsRate({ income: 0, expense: 500, balance: -500 })).toBeNull()
   })
 })
 

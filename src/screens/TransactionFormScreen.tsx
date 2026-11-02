@@ -100,11 +100,11 @@ export default function TransactionFormScreen({
             }}
             aria-invalid={amountError}
             aria-describedby={amountError ? 'amount-error' : undefined}
-            className={`${fieldClass} text-end ${amountError ? 'border-expense' : ''}`}
+            className={`${fieldClass} text-end ${amountError ? 'border-warn' : ''}`}
             placeholder="0.00"
           />
           {amountError && (
-            <span id="amount-error" role="alert" className="text-sm text-expense">
+            <span id="amount-error" role="alert" className="text-sm text-warn">
               {t('amountError')}
             </span>
           )}

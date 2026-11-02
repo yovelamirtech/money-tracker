@@ -74,10 +74,10 @@ export default function BudgetsScreen({ budgets, categories, onSave, onBack }: B
                       setInputs({ ...inputs, [category.id]: e.target.value })
                       setSaved(false)
                     }}
-                    className={`${fieldClass} text-end ${isInvalid ? 'border-expense' : ''}`}
+                    className={`${fieldClass} text-end ${isInvalid ? 'border-warn' : ''}`}
                   />
                   {isInvalid && (
-                    <span id={`budget-${category.id}-error`} className="text-sm text-expense">
+                    <span id={`budget-${category.id}-error`} className="text-sm text-warn">
                       {t('invalidAmount')}
                     </span>
                   )}

@@ -145,7 +145,7 @@ export default function SettingsScreen({ data, onSettingsChange, onOpen, onImpor
             <input type="file" accept="application/json,.json" onChange={handleImportFile} className="sr-only" />
           </label>
           {importStatus && (
-            <p role={importStatus.ok ? 'status' : 'alert'} className={`text-sm ${importStatus.ok ? 'text-income' : 'text-expense'}`}>
+            <p role={importStatus.ok ? 'status' : 'alert'} className={`text-sm ${importStatus.ok ? 'text-income' : 'text-warn'}`}>
               {importStatus.text}
             </p>
           )}

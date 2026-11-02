@@ -91,7 +91,7 @@ export default function CategoriesScreen({
                       type="button"
                       aria-label={t('deleteCategory', { name })}
                       onClick={() => confirmDelete(category)}
-                      className={`${iconButton} hover:bg-danger-soft hover:text-expense`}
+                      className={`${iconButton}`}
                     >
                       ✕
                     </button>

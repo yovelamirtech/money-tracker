@@ -23,7 +23,7 @@ describe('App', () => {
     const currentMonth = toMonthKey(todayISO())
     expect(screen.getByRole('heading', { name: formatMonthLabel(currentMonth) })).toBeInTheDocument()
     expect(screen.getByText('אין תנועות בחודש הזה')).toBeInTheDocument()
-    expect(summaryValue('יתרה').getByText('₪0.00')).toBeInTheDocument()
+    expect(summaryValue('הוצאות').getByText('₪0.00')).toBeInTheDocument()
   })
 
   it('main flow: type → sent without a category → sort it → the next one is learned → totals', async () => {
@@ -66,7 +66,7 @@ describe('App', () => {
     await user.click(screen.getByRole('button', { name: 'חודש' }))
     expect(summaryValue('הוצאות').getByText('₪8,000.00')).toBeInTheDocument()
     expect(summaryValue('הכנסות').getByText('₪10,000.00')).toBeInTheDocument()
-    expect(summaryValue('יתרה').getByText('₪2,000.00')).toBeInTheDocument()
+    expect(summaryValue('נשאר').getByText('₪2,000.00')).toBeInTheDocument()
   })
 
   it('fixes the latest entry right away: edit it, or delete it', async () => {

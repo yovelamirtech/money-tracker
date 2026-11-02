@@ -126,7 +126,7 @@ export default function EntryScreen({
         <div className="mx-auto flex max-w-md flex-col gap-1">
           <div className="min-h-5 truncate px-1 text-sm">
             {error ? (
-              <p id="entry-error" role="alert" className="text-expense">
+              <p id="entry-error" role="alert" className="text-warn">
                 {t(error)}
               </p>
             ) : (
@@ -159,7 +159,7 @@ export default function EntryScreen({
                 setError(null)
               }}
               className={`min-h-12 min-w-0 flex-1 rounded-full border bg-card px-4 text-lg text-fg focus:border-accent focus:outline-2 focus:outline-focus ${
-                error ? 'border-expense' : 'border-field'
+                error ? 'border-warn' : 'border-field'
               }`}
             />
             <button

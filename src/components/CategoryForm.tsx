@@ -30,7 +30,7 @@ const colorLabels: Record<CategoryColor, MessageKey> = {
   magenta: 'colorMagenta',
   green: 'colorGreen',
   violet: 'colorViolet',
-  red: 'colorRed',
+  red: 'colorBrown',
   gray: 'colorGray',
 }
 
@@ -79,7 +79,7 @@ export default function CategoryForm({
             }}
             aria-invalid={error !== null}
             aria-describedby={error ? `${id}-error` : undefined}
-            className={`${fieldClass} ${error ? 'border-expense' : ''}`}
+            className={`${fieldClass} ${error ? 'border-warn' : ''}`}
           />
         </label>
         <label className="flex flex-col gap-1">
@@ -88,7 +88,7 @@ export default function CategoryForm({
         </label>
       </div>
       {error && (
-        <p id={`${id}-error`} role="alert" className="text-sm text-expense">
+        <p id={`${id}-error`} role="alert" className="text-sm text-warn">
           {t(error)}
         </p>
       )}

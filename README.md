@@ -2,8 +2,8 @@
 
 [![CI](https://github.com/yovelamirtech/money-tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/yovelamirtech/money-tracker/actions/workflows/ci.yml)
 
-A mobile-first web app (Hebrew RTL, with an English option) for tracking income and expenses.
-Add what came in and what went out, and see each month's income, expenses, balance, and where the money goes.
+A mobile-first web app (Hebrew RTL, with an English option) for tracking spending.
+Type what went out, and see each month's spending and where the money goes. Income is optional: there's a place to enter it, and it only shows up in a month where you did. Nothing is shown in red.
 Everything is stored locally in the browser. No backend, no login. It can be installed on a phone and works offline.
 
 **Live:** https://yovelamirtech.github.io/money-tracker/
@@ -14,7 +14,7 @@ Everything is stored locally in the browser. No backend, no login. It can be ins
 
 - **Entry (home screen):** one line, like `שכ״ד 4000`, and send. The number is the amount and the rest is the note. The latest entries are right below; tap one to fix it, or delete it. A detailed form is there for a date or a monthly repeat.
 - **Categories by learning:** an entry gets the category last chosen for the same note; "משכורת" is income. Anything else waits as "no category" until you sort it: one entry at a time, one tap on a category button, and every other entry with the same note goes with it (with undo).
-- **Month:** income, expenses, balance and savings rate; budget warnings and progress bars; spending by category; changes from last month; a 6/12‑month income vs expenses trend; every transaction of the month
+- **Month:** the month's spending (plus income and what's left, only if income was entered); calm amber budget warnings and progress bars; spending by category; changes from last month; a 6/12‑month spending trend; every transaction of the month
 - **Recurring transactions:** rent, salary and subscriptions are added automatically every month, never twice
 - **Search:** by note, type, category and amount range, across all months
 - **Settings:** manage categories (name, emoji, color), recurring items, budgets; light/dark/system theme; Hebrew/English

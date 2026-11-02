@@ -49,7 +49,7 @@ export default function TransactionList({
         const category = categoriesById.get(tx.categoryId)
         const name = categoryName(category)
         const isIncome = tx.type === 'income'
-        const amount = `${isIncome ? '+' : '-'}${formatILS(tx.amountAgorot)}`
+        const amount = `${isIncome ? '+' : ''}${formatILS(tx.amountAgorot)}`
         const date = showYear ? formatFullDate(tx.date) : formatShortDate(tx.date)
         const title = noteFirst && tx.note ? tx.note : name
         const detail = noteFirst && tx.note ? name : tx.note
@@ -83,7 +83,7 @@ export default function TransactionList({
                   {detail && ` · ${detail}`}
                 </span>
               </span>
-              <span dir="ltr" className={`font-semibold ${isIncome ? 'text-income' : 'text-expense'}`}>
+              <span dir="ltr" className={`font-semibold ${isIncome ? 'text-income' : 'text-fg'}`}>
                 {amount}
               </span>
             </button>
@@ -91,7 +91,7 @@ export default function TransactionList({
               type="button"
               aria-label={t('deleteTransaction', { name: title })}
               onClick={() => confirmDelete(tx, title)}
-              className={`${iconButton} hover:bg-danger-soft hover:text-expense`}
+              className={`${iconButton}`}
             >
               ✕
             </button>

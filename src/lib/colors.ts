@@ -8,7 +8,8 @@ export const CATEGORY_COLORS = {
   magenta: '#e87ba4',
   green: '#008300',
   violet: '#6250d6',
-  red: '#e34948',
+  // The key stays 'red' so saved categories keep loading, but the color is brown: nothing in the app is red.
+  red: '#a0703c',
   gray: '#898781',
 } as const
 

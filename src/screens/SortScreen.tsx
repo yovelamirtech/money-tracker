@@ -95,7 +95,7 @@ export default function SortScreen({ transactions, categories, onAssign, onUndo,
           <section aria-label={t('sortProgress', { count: queue.length })} className={`${card} flex flex-col gap-1 text-center`}>
             <p className="text-sm text-muted">{t('sortProgress', { count: queue.length })}</p>
             <p className="text-2xl font-bold break-words">{current.note ?? t('sortNoNote')}</p>
-            <p dir="ltr" className="text-xl font-semibold text-expense">
+            <p dir="ltr" className="text-xl font-semibold text-fg">
               {formatILS(current.amountAgorot)}
             </p>
             <p className="text-sm text-muted">{formatFullDate(current.date)}</p>
@@ -108,12 +108,15 @@ export default function SortScreen({ transactions, categories, onAssign, onUndo,
             {categoryButtons(expenseCategories, current)}
           </section>
 
-          <section aria-labelledby="sort-income-title" className="flex flex-col gap-2">
-            <h2 id="sort-income-title" className="text-sm font-semibold text-muted">
+          {/* Income is optional in this app, so its categories stay folded away until asked for. */}
+          <details>
+            <summary className={`cursor-pointer self-start rounded-xl py-2 text-sm font-semibold text-muted ${focusRing}`}>
               {t('sortIncomeCategories')}
-            </h2>
-            {categoryButtons(incomeCategories, current)}
-          </section>
+            </summary>
+            <section aria-label={t('sortIncomeCategories')} className="mt-2">
+              {categoryButtons(incomeCategories, current)}
+            </section>
+          </details>
 
           <button
             type="button"
