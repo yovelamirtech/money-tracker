@@ -128,23 +128,60 @@ describe('App', () => {
     expect(screen.getByRole('heading', { name: 'הזנות אחרונות' })).toHaveFocus()
   })
 
-  it('keeps the entry bar on the keyboard: --kb and kb-open follow the visual viewport', () => {
-    const viewport = Object.assign(new EventTarget(), { height: window.innerHeight, offsetTop: 0 })
+  it('while typing on a touch screen: hides the tab bar (kb-open) and hangs the entry bar from the visible bottom', async () => {
+    const user = userEvent.setup()
+    const viewport = Object.assign(new EventTarget(), { height: 800, offsetTop: 0 })
     vi.stubGlobal('visualViewport', viewport)
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: query === '(pointer: coarse)',
+      media: query,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    }))
     const { unmount } = render(<App />)
     const html = document.documentElement
+    const field = screen.getByLabelText('הזנה חדשה')
+
+    // The entry tab opens with the field focused, but the tab bar stays until a keyboard shows up
+    // (a phone may not open the keyboard for a field focused by itself)
+    expect(field).toHaveFocus()
     expect(html).not.toHaveClass('kb-open')
 
-    viewport.height = window.innerHeight - 300
+    // The keyboard covers the bottom of the page: the tab bar goes, and the bar follows the visible area
+    viewport.height = 450
+    viewport.offsetTop = 30
     viewport.dispatchEvent(new Event('resize'))
     expect(html).toHaveClass('kb-open')
-    expect(html.style.getPropertyValue('--kb')).toBe('300px')
+    expect(html.style.getPropertyValue('--vv-bottom')).toBe('480px')
 
-    viewport.height = window.innerHeight
+    // Same when the browser shrinks the whole page for the keyboard instead of covering it
+    vi.stubGlobal('innerHeight', 450)
+    viewport.offsetTop = 0
+    window.dispatchEvent(new Event('resize'))
+    expect(html).toHaveClass('kb-open')
+    expect(html.style.getPropertyValue('--vv-bottom')).toBe('450px')
+
+    // Leaving the field brings the tab bar back
+    await user.click(screen.getByRole('heading', { name: 'הזנות אחרונות' }))
+    expect(field).not.toHaveFocus()
+    expect(html).not.toHaveClass('kb-open')
+
+    await user.click(field)
+    expect(html).toHaveClass('kb-open')
+
+    // The keyboard closed but the field kept focus (Android's back button): the tab bar comes back
+    viewport.height = 800
     viewport.dispatchEvent(new Event('resize'))
+    expect(field).toHaveFocus()
     expect(html).not.toHaveClass('kb-open')
     unmount()
     vi.unstubAllGlobals()
+  })
+
+  it('keeps the tab bar while the field is focused with a mouse (no on-screen keyboard)', () => {
+    render(<App />)
+    expect(screen.getByLabelText('הזנה חדשה')).toHaveFocus()
+    expect(document.documentElement).not.toHaveClass('kb-open')
   })
 
   it('shows an error for an entry without a valid amount, and saves nothing', async () => {
